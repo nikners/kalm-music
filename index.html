@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <title>Kalm — Music, in full</title>
+    <!-- Inline SVG favicon: the amber K tile on the dark ground, matching the
+         brand mark. Was still Spotify green after the palette change. -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23c9873a'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' font-weight='bold' text-anchor='middle' fill='%23191713'%3EK%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts are trimmed to the weights the stylesheet actually declares and to
+         the subsets this catalog needs. The previous URL asked for Fraunces
+         italics plus wght 400..700 and Spectral 300/500/600, none of which are
+         used: 771.8 KB of woff2 across five subsets, 284.3 KB of it Latin.
+         This is 528.8 KB total, 182.7 KB Latin, and one fewer face per subset. -->
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400..700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="brand" id="brandHome" aria-label="Kalm — go to Discover">
+        <span class="brand-mark">K</span><span class="brand-name">kalm</span>
+      </button>
+
+      <!-- Three peer destinations, so they read as peer tabs. Replaces the
+           232px sidebar, which spent permanent width on three buttons and cost
+           the album grid a column of artwork. -->
+      <nav class="nav-tabs" id="navTabs" aria-label="Primary">
+        <button class="nav-tab" data-view="discover" aria-current="true"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Discover</span></button>
+        <button class="nav-tab" data-view="favorites"><span class="nav-icon" aria-hidden="true">♡</span><span class="nav-label">Favorites</span></button>
+        <button class="nav-tab" data-view="recent"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-label">Recently viewed</span></button>
+      </nav>
+
+      <div class="topbar-search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="searchInput" type="search" placeholder="Search artists, albums or tracks" autocomplete="off" aria-label="Search the catalog" />
+        <kbd class="enter-key" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
+          </svg>
+        </kbd>
+      </div>
+
+      <button class="icon-button" id="themeToggle" aria-label="Toggle theme">◐</button>
+    </header>
+
+    <main class="main-content">
+        <section id="discoverView" class="view active-view">
+          <div class="page">
+            <div class="page-heading">
+              <h1>Discover</h1>
+              <p class="muted">Search artists, albums and tracks, then follow the credits behind the sound. Catalog via Deezer.</p>
+            </div>
+
+            <div class="section-heading" id="recentHeading" hidden>
+              <div><h2>Recently viewed</h2></div>
+            </div>
+            <div class="album-grid" id="recentAlbums"></div>
+
+            <div id="discoverRows"></div>
+          </div>
+        </section>
+
+        <section id="resultsView" class="view">
+          <div class="page">
+            <div class="page-heading">
+              <h1 id="resultsTitle">Results</h1>
+              <p id="resultsSubtitle" class="muted"></p>
+            </div>
+            <div class="tab-bar" id="tabBar" role="tablist" aria-label="Filter results"></div>
+            <div id="resultsList" class="results-list"></div>
+          </div>
+        </section>
+
+        <section id="albumView" class="view"><div class="page"></div></section>
+        <section id="artistView" class="view"><div class="page"></div></section>
+        <section id="collectionView" class="view"><div class="page"></div></section>
+    </main>
+
+    <!-- Expanded cover view. Lives outside the view sections so it survives
+         album-to-album navigation and its listeners attach only once. -->
+    <dialog id="coverDialog" class="cover-dialog" aria-label="Expanded album cover">
+      <div class="cover-dialog-inner">
+        <button class="cover-close" id="coverClose" aria-label="Close expanded cover">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div class="cover-tilt">
+          <div class="cover-tilt-inner" id="coverTiltInner"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Single polite live region. Every status change is announced here rather
+         than adding a region per view, which screen readers handle poorly. -->
+    <p id="liveStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+
+    <!-- Undo toast. Announced through the live region above, so it needs no
+         aria-live of its own. -->
+    <div id="toast" class="toast" hidden>
+      <span id="toastText" class="toast-text"></span>
+      <button id="toastAction" class="toast-action" type="button"></button>
+    </div>
+
+    <!-- Keyboard help. A dialog rather than a panel so Esc and focus trapping
+         come from the platform instead of being hand-rolled. -->
+    <dialog id="helpDialog" class="help-dialog" aria-label="Keyboard shortcuts and card key">
+      <div class="help-inner">
+        <button class="cover-close" id="helpClose" aria-label="Close help">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <p class="eyebrow">Reference</p>
+        <h2 class="help-title">Keyboard</h2>
+        <dl class="help-list">
+          <dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd></dt><dd>Focus search</dd>
+          <dt><kbd>Enter</kbd></dt><dd>Run the search</dd>
+          <dt><kbd>Tab</kbd></dt><dd>Move through every result, card and link</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Close the expanded cover or this panel</dd>
+          <dt><kbd>?</kbd></dt><dd>Open this panel</dd>
+        </dl>
+        <p class="eyebrow">Reading the cards</p>
+        <h2 class="help-title">Card key</h2>
+        <dl class="help-list">
+          <dt><strong>No. 4</strong></dt><dd>Position on Deezer's artist chart. That feed carries no fan or album count, so the number is the rank, not a total.</dd>
+          <dt><strong>2.4M fans</strong></dt><dd>Followers on Deezer.</dd>
+          <dt><strong>3:49</strong></dt><dd>Track length.</dd>
+          <dt><strong>E</strong></dt><dd>Album contains explicit lyrics.</dd>
+        </dl>
+        <p class="help-colophon">Kalm v0.4 · via Deezer</p>
+      </div>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>

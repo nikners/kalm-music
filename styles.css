@@ -1,0 +1,1073 @@
+/* ============================================================== Kalm tokens
+   Dark (default) is a matte board sleeve; html.light is aged liner paper. */
+:root {
+  --bg: #191713;
+  --surface: #201d18;
+  --surface-2: #2a2620;
+  --surface-3: #35302a;
+  --surface-4: #433d35;
+  --ink: #cdc2ae;
+  --ink-strong: #f6efe1;
+  --muted: #a2977f;
+  /* --faint carries every micro-label, so it must clear 4.5:1 on both --bg and
+     --surface rather than reading as "washed out". */
+  --faint: #91866e;
+  --line: #322d26;
+  --accent: #c9873a;
+  --accent-ink: #191713;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lift: 0 10px 26px rgba(0, 0, 0, 0.6);
+  --grain: 0.05;
+  /* Edge length of the turbulence tile below. The grain drift is capped at
+     exactly this on X, so the texture always wraps within a whole tile and the
+     seam can never slide into view. */
+  --grain-tile: 180px;
+  --ease: cubic-bezier(0.22, 0.61, 0.24, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 0.32s;
+  --dur-fast: 0.18s;
+  /* Corner radius scales with element size: controls get more rounding than the
+     artwork they sit next to, and the largest surfaces get the most. Kept
+     deliberately small so the treatment still reads as printed matter. */
+  --radius-control: 4px;
+  --radius-art: 3px;
+  --radius-surface: 6px;
+  --font-display: 'Fraunces', 'Spectral', Georgia, serif;
+  --font-body: 'Spectral', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Azeret Mono', 'Courier New', monospace;
+  /* One token because the mono labels are a single role at a single weight.
+     Space Mono shipped only 400 and 700, which forced this to 700 and made the
+     10.5px uppercase labels blunt; Azeret Mono has a real 500, so the labels get
+     the weight they were always asking for. */
+  --mono-weight: 500;
+  /* ---- the record in the sleeve --------------------------------------
+     One disc, one travel distance, both themes. These live on :root and are
+     deliberately NOT redeclared per theme.
+
+     The disc travels only as far as the hero's grid gap, so it stops level
+     with the text column and never passes behind the album title. An earlier
+     version slid it a third of the way out instead, which in dark mode dragged
+     the disc across the artist name, the accent label and the metadata table.
+     The gap-sized peek reads as a record tucked in the sleeve.
+
+     Trimming is also what makes one disc colour safe for both themes. The
+     themes have opposite polarity — dark works because light type sits on a
+     dark disc, but paper's title is near-black (#221e18), so a disc reaching
+     the text landed at 1.01:1 and the title simply vanished. With the disc
+     behind no text at all, the colour is free, so the rings are one grey that
+     has to hold up against #191713 and #f2ece0 alike.
+
+     The two ring values differ by a few steps so the grooves still read as
+     rings rather than as a flat circle. */
+  --hero-gap: 36px;
+  --vinyl-out: calc(-100% + var(--hero-gap));
+  --disc-ring-a: #7a766d;
+  --disc-ring-b: #8a867c;
+}
+
+/* Paper: warmer and lighter than pure cream, with an oxblood accent. */
+html.light {
+  --bg: #f2ece0;
+  --surface: #faf6ec;
+  --surface-2: #ece4d4;
+  --surface-3: #e2d8c4;
+  --surface-4: #d6c9b0;
+  --ink: #443c31;
+  --ink-strong: #221e18;
+  --muted: #6d6252;
+  --faint: #756950;
+  --line: #ddd2bd;
+  --accent: #a6432a;
+  --accent-ink: #faf6ec;
+  --shadow: 0 2px 6px rgba(74, 58, 40, 0.12);
+  --shadow-lift: 0 10px 24px rgba(74, 58, 40, 0.2);
+  --grain: 0.035;
+  /* No disc overrides here on purpose. --vinyl-out and --disc-ring-a/b are
+     inherited from :root, so paper gets exactly the same disc, in exactly the
+     same colour, travelling exactly as far as dark. The reason that is safe is
+     documented on :root. */
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--dur) var(--ease-soft), color var(--dur) var(--ease-soft);
+}
+
+/* Film grain / paper fibre. One fixed pseudo-element, no JS, no request.
+   Sits above everything but never intercepts pointer events.
+
+   The layer is oversized on every side (--grain-tile plus overscan) because a
+   fixed inset:0 layer would expose the tile's edge as it drifts. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -200px;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--grain);
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* steps() re-renders the texture once per cycle rather than sliding it, so the
+     grain shimmers in place like film instead of drifting as a cloud. X is
+     capped at one tile width; any further and the seam slides into view. */
+  animation: grainDrift 13s steps(1, end) infinite;
+}
+@keyframes grainDrift {
+  from { background-position: 0 0; }
+  to   { background-position: var(--grain-tile) 90px; }
+}
+
+/* Second grain layer at a different noise frequency, rate and opacity. 13s and
+   8s share no factor, so the two never fall into step and the composite does
+   not visibly repeat. Blended rather than stacked so it adds tooth to the
+   first layer instead of simply doubling it. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: -200px;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: calc(var(--grain) * 0.5);
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.91' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grainDrift2 8s steps(1, end) infinite;
+}
+@keyframes grainDrift2 {
+  from { background-position: 0 0; }
+  to   { background-position: 60px 143px;   /* 180 - 37, so the two layers
+                                              re-align at different moments */ }
+}
+
+/* Texture muddies small text on poor panels, so drop it when transparency is
+   explicitly unwanted. */
+@media (prefers-reduced-transparency: reduce) {
+  body::before, body::after { display: none; }
+}
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+img { display: block; max-width: 100%; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+* { scrollbar-width: thin; scrollbar-color: var(--surface-4) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 6px; border: 2px solid var(--bg); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+/* Cards are real buttons and are reachable by Tab, so they need a ring that
+   reads as part of the printed treatment rather than a browser default bolted
+   on. Offset on the artwork keeps it off the edge. */
+.album-card:focus-visible,
+.shelf-card:focus-visible,
+.disco-card:focus-visible,
+.related-card:focus-visible,
+.video-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.result-row:focus-within { background: var(--surface); }
+
+/* Available to assistive tech, absent from the visual page. */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Micro-label: mono, uppercase, wide tracking. Used for every eyebrow. */
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--faint);
+}
+
+.muted { color: var(--muted); }
+.explicit {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 15px; height: 15px;
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: var(--mono-weight);
+  line-height: 1;
+}
+
+/* ================================================================== shell */
+.main-content { min-width: 0; }
+
+/* ================================================================== topbar */
+.topbar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+}
+
+/* Brand sits inline with navigation now, so it needs no stacking of its own. */
+.brand {
+  display: flex; align-items: center; gap: 9px;
+  flex: none;
+  color: var(--ink-strong);
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.brand:hover { opacity: 0.7; }
+.brand-mark {
+  width: 27px; height: 27px; flex: none;
+  display: grid; place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 2px;
+}
+.brand-name { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+
+/* Three peer destinations read as peer tabs. The active tab's underline lands on
+   the topbar's own bottom border, which is what distinguishes this from the
+   result filter tabs further down the page. */
+.nav-tabs { display: flex; align-items: center; gap: 4px; flex: none; }
+.nav-tab {
+  position: relative;
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 11px 9px;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-soft), background-color var(--dur-fast) var(--ease-soft);
+}
+.nav-tab:hover { color: var(--ink-strong); background: var(--surface-2); }
+.nav-tab.active { color: var(--ink-strong); }
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 11px; right: 11px; bottom: -11px;
+  height: 2px;
+  background: var(--accent);
+}
+.nav-icon { font-size: 13px; line-height: 1; opacity: 0.75; }
+.nav-tab.active .nav-icon { opacity: 1; }
+
+.topbar-search { position: relative; flex: 1; max-width: 460px; margin-left: auto; }
+.topbar-search .search-icon {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint); font-size: 13px; pointer-events: none;
+}
+.topbar-search input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-surface);
+  padding: 8px 40px 8px 32px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink-strong);
+  transition: border-color var(--dur-fast) var(--ease-soft), background-color var(--dur-fast) var(--ease-soft);
+}
+.topbar-search input::placeholder { color: var(--faint); }
+.topbar-search input:focus { outline: none; border-color: var(--accent); }
+.topbar-search kbd {
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  display: grid; place-items: center;
+  width: 20px; height: 18px;
+  color: var(--faint);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.icon-button {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: 15px;
+  transition: background-color var(--dur-fast) var(--ease-soft), color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
+}
+.icon-button:hover { background: var(--surface-3); color: var(--ink-strong); }
+.icon-button:active { transform: scale(0.94); }
+
+/* ================================================================== views */
+.view { display: none; }
+.active-view { display: block; }
+.page { padding: 26px 24px 72px; max-width: 1420px; }
+
+.page-heading { margin-bottom: 22px; }
+.page-heading .eyebrow { margin: 0 0 5px; }
+.page-heading h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.page-heading .muted { margin: 7px 0 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
+
+.section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 36px 0 14px; }
+.section-heading h2 { margin: 0; font-size: 21px; font-weight: 600; color: var(--ink-strong); }
+.section-heading .eyebrow { margin-bottom: 4px; }
+.result-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+
+/* =================================================================== tabs */
+.tab-bar { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin-bottom: 6px; overflow-x: auto; }
+.tab {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 2px 13px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-soft);
+}
+.tab:hover { color: var(--ink-strong); }
+.tab.active { color: var(--ink-strong); }
+.tab.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); }
+.tab-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); }
+
+/* ============================================================ result rows */
+.results-list { display: flex; flex-direction: column; }
+.result-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 92px 64px;
+  align-items: center; gap: 15px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-soft), padding-left var(--dur-fast) var(--ease);
+}
+.result-row:hover { background: var(--surface); padding-left: 14px; }
+.result-row:hover .result-title { color: var(--accent); }
+.result-text { min-width: 0; }
+/* Now a <button> so results are reachable by keyboard; it needs to fill the
+   text column and read as a heading, not a control. */
+.result-title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color var(--dur-fast) var(--ease-soft);
+}
+.result-sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result-kind { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); text-align: right; }
+.result-meta { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+.result-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-art); background: var(--surface-2); box-shadow: var(--shadow); }
+.result-thumb.round { border-radius: 50%; }
+
+.inline-link { color: inherit; font: inherit; padding: 0; text-align: left; }
+.inline-link:hover { color: var(--accent); }
+.inline-link.strong { color: var(--accent); font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+
+/* ========================================================== artist banner */
+.artist-banner {
+  display: block; text-align: left;
+  padding: 16px 18px; margin-bottom: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-art);
+  background: var(--surface);
+  transition: background-color var(--dur-fast) var(--ease-soft), border-color var(--dur-fast) var(--ease-soft);
+}
+.artist-banner:hover { background: var(--surface-2); border-color: var(--accent); }
+.artist-banner-label { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); }
+.artist-banner-name { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink-strong); margin-top: 4px; }
+
+/* ============================================================== card grids */
+.album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 24px 18px; }
+/* A <button> now, so it has to lay out as a block card again. */
+.album-card {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.album-card .album-art {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+}
+.album-card:hover .album-art { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
+.album-meta { padding-top: 10px; min-width: 0; }
+.album-meta strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.album-card:hover .album-meta strong { color: var(--accent); }
+.album-meta span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.album-card.is-loading .album-meta strong { color: var(--faint); }
+
+.art-placeholder {
+  display: grid; place-items: center;
+  background: linear-gradient(145deg, var(--surface-2), var(--surface-3));
+  color: var(--faint);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+/* =========================================================== detail pages */
+.album-hero { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 36px; align-items: start; padding-bottom: 30px; border-bottom: 1px solid var(--line); position: relative; }
+
+.cover-expand { position: relative; display: block; width: 300px; aspect-ratio: 1; padding: 0; border-radius: var(--radius-art); cursor: zoom-in; transition: transform var(--dur) var(--ease); }
+
+/* Sized to the cover and nothing else. It exists purely so the vinyl below can
+   measure the sleeve rather than the whole hero. It must stay in the width
+   sync list in the media queries further down, or the disc drifts. */
+.hero-cover { position: relative; width: 100%; }
+.cover-expand:hover { transform: scale(1.015); }
+.cover-expand:active { transform: scale(0.995); }
+.cover-expand .album-art { width: 100%; height: 100%; border-radius: var(--radius-art); }
+
+/* The record sliding out of its sleeve.
+
+   Two placement facts are load-bearing here, and the first one has already cost
+   a bug once:
+
+   1. It is a SIBLING of .cover-expand, not a child. Inside the button, the
+      `transform: scale(1.015)` on hover created a stacking context and trapped
+      its z-index:-1 inside the button, which then painted as one unit ABOVE
+      .album-hero-text — so the disc covered the album title and artist name.
+      That failure is invisible to elementFromPoint while the disc is
+      pointer-events:none, because hit-testing skips it entirely.
+
+   2. It is anchored to .hero-cover, not to .album-hero. Anchoring to the hero
+      meant hardcoding the grid's cover width and gap (left:336px, width:252px),
+      which put the disc 36px further out than the sleeve and ~126px too high,
+      and which could not track the 210px breakpoint at all.
+
+   .hero-cover carries no transform, so it creates no stacking context and the
+   -1 still resolves to the root: the disc genuinely sits behind the title, the
+   artist name and the metadata table.
+
+   Offset maths, all relative to the cover: left:100% is the sleeve's right edge.
+   translateX(-100%) parks the disc entirely behind the sleeve. How far it
+   travels is --vinyl-out, which differs per theme — dark slides the full third,
+   paper stops at the gap so the disc never reaches the text. width:84% and
+   margin-top:-42% are percentages of the cover, so the disc and its centring
+   rescale with the responsive widths. */
+.vinyl {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 84%;
+  aspect-ratio: 1;
+  margin-top: -42%;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+  /* Grooves: two ring tones alternating, then the label punched over them.
+     The tones are tokens because paper needs a far lighter disc than dark. */
+  background:
+    radial-gradient(circle at 50% 50%, var(--accent) 0 15%, transparent 15%),
+    repeating-radial-gradient(circle at 50% 50%,
+      var(--disc-ring-a) 0 2px, var(--disc-ring-b) 2px 4px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 6px 18px rgba(0, 0, 0, 0.55);
+  transform: translateX(-100%);
+  transition: transform var(--dur) var(--ease);
+}
+.cover-expand:hover ~ .vinyl,
+.cover-expand:focus-visible ~ .vinyl { transform: translateX(var(--vinyl-out)); }
+.cover-expand-hint {
+  position: absolute; right: 10px; bottom: 10px; z-index: 3;
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  color: #f6efe1;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity var(--dur) var(--ease-soft), transform var(--dur) var(--ease);
+  pointer-events: none;
+}
+.cover-expand:hover .cover-expand-hint, .cover-expand:focus-visible .cover-expand-hint { opacity: 1; transform: scale(1); }
+
+.cover-dialog { border: 0; padding: 0; margin: auto; max-width: 100vw; max-height: 100vh; background: transparent; overflow: visible; }
+.cover-dialog::backdrop { background: rgba(12, 10, 8, 0.88); backdrop-filter: blur(6px); }
+.cover-dialog-inner { position: relative; display: grid; place-items: center; }
+.cover-close {
+  position: absolute; top: 14px; right: 14px; z-index: 5;
+  display: grid; place-items: center;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: rgba(246, 239, 225, 0.1);
+  color: #f6efe1;
+  transition: background-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
+}
+.cover-close:hover { background: rgba(246, 239, 225, 0.22); transform: scale(1.06); }
+.cover-dialog .cover-tilt { width: min(80vmin, 640px); aspect-ratio: 1; perspective: 1100px; animation: coverIn 0.34s var(--ease) both; }
+.cover-dialog[data-no-motion] .cover-tilt { animation: none; }
+@keyframes coverIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+.cover-tilt { width: 300px; aspect-ratio: 1; perspective: 900px; }
+.cover-tilt-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(calc(var(--ny, 0) * var(--tilt, 11deg))) rotateY(calc(var(--nx, 0) * var(--tilt, 11deg)));
+  transition: transform 0.45s var(--ease);
+}
+.cover-tilt.is-active .cover-tilt-inner { transition: none; will-change: transform; }
+.cover-tilt .album-art, .cover-tilt .art-placeholder {
+  width: 100%; height: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art);
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+}
+/* Gloss sleeve sheen.
+   The overlay is deliberately never transformed. Inside this preserve-3d
+   context a Z offset scales it (1100/(1100-20) is roughly 2% growth on every
+   edge) and an X/Y translate slides it off the sleeve, which is what made the
+   glare drift out of alignment. Instead the gradient itself is oversized to
+   300% and slid with background-position, so the element stays exactly inset:0
+   at any tilt angle and no gradient edge can enter the visible window. */
+.cover-tilt-inner::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: var(--radius-art);
+  pointer-events: none; z-index: 2;
+  opacity: 0;
+  background-image: linear-gradient(115deg,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 60%);
+  background-size: 300% 300%;
+  background-repeat: no-repeat;
+  background-position:
+    calc(50% - var(--nx, 0) * 15%)
+    calc(50% - var(--ny, 0) * 12%);
+  transition: opacity 0.3s var(--ease-soft), background-position 0.45s var(--ease);
+}
+.cover-tilt.is-active .cover-tilt-inner::before {
+  opacity: 1;
+  /* Position must not ease while tracking, or the sheen lags behind the cursor.
+     Only opacity keeps a short transition here. */
+  transition: opacity 0.15s var(--ease-soft);
+}
+/* The drop shadow keeps its Z offset on purpose: a shadow should lag in the
+   plane as the sleeve tilts, and being blurred it has no hard edge to expose. */
+.cover-tilt-inner::after {
+  content: '';
+  position: absolute; inset: 6px;
+  border-radius: var(--radius-art);
+  pointer-events: none; z-index: -1;
+  background: rgba(0, 0, 0, 0.6);
+  filter: blur(18px);
+  transform: translate3d(calc(var(--nx, 0) * 16px), calc(var(--ny, 0) * 11px), -30px);
+  transition: transform 0.45s var(--ease);
+}
+.cover-tilt.is-active .cover-tilt-inner::after { transition: none; }
+
+.album-hero > .album-art, .album-hero > .art-placeholder {
+  width: 300px; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art); border: 1px solid var(--line);
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-display);
+  font-size: 3rem;
+}
+.album-hero-text { min-width: 0; padding-top: 4px; }
+.album-title {
+  margin: 7px 0 5px;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 600;
+  color: var(--ink-strong);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+.album-artist {
+  display: inline-block; margin: 0 0 22px; padding: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--accent);
+  transition: opacity var(--dur-fast) var(--ease-soft);
+}
+.album-artist:hover { opacity: 0.78; text-decoration: underline; text-underline-offset: 4px; }
+
+.fact-link { color: var(--accent); padding: 0; font: inherit; font-family: var(--font-display); }
+
+.artist-hero { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 34px; align-items: end; padding-bottom: 30px; border-bottom: 1px solid var(--line); }
+.artist-hero > .artist-photo, .artist-hero > .art-placeholder {
+  width: 220px; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art); border: 1px solid var(--line);
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+}
+.artist-name { margin: 7px 0 20px; font-size: clamp(32px, 5vw, 48px); font-weight: 600; color: var(--ink-strong); letter-spacing: -0.03em; line-height: 1.04; }
+.artist-aliases { margin: 0 0 16px; font-size: 13px; color: var(--faint); font-style: italic; }
+.artist-aliases span { margin-right: 10px; }
+
+/* Metadata as a printed block rather than pills. */
+.album-facts { width: 100%; max-width: 470px; border-collapse: collapse; font-size: 13.5px; margin-bottom: 22px; }
+.album-facts th, .album-facts td { padding: 8px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.album-facts th {
+  width: 108px;
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding-top: 11px;
+}
+.album-facts td { color: var(--ink-strong); }
+.album-facts tr:last-child th, .album-facts tr:last-child td { border-bottom: 0; }
+.fact-tag {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 1px 7px;
+  margin: 0 5px 4px 0;
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+.album-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.action-button {
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-ink);
+  transition: transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease-soft);
+}
+.action-button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.action-button:active { transform: translateY(0) scale(0.98); }
+.action-button.secondary { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.action-button.secondary:hover { background: var(--surface-2); border-color: var(--accent); filter: none; }
+
+.album-body { padding-top: 30px; }
+.album-body section + section { margin-top: 36px; }
+.album-body h2 { margin: 0 0 14px; font-size: 21px; font-weight: 600; color: var(--ink-strong); }
+
+.track-list { border-top: 1px solid var(--line); }
+.track {
+  display: grid; grid-template-columns: 38px minmax(0, 1fr) 240px; gap: 12px;
+  padding: 8px 6px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color var(--dur-fast) var(--ease-soft);
+}
+.track:hover { background: var(--surface); }
+.track-number { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.track-name { color: var(--ink-strong); }
+.track-credit { color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.credits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
+.credit-group h3 { margin: 0 0 8px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.13em; color: var(--faint); }
+.credit-group p { margin: 0 0 5px; font-size: 13.5px; color: var(--ink-strong); }
+
+.related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
+.related-card { text-align: left; padding: 0; }
+.related-card .related-photo {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art); border: 1px solid var(--line);
+  background: var(--surface-2); box-shadow: var(--shadow);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+}
+.related-card:hover .related-photo { transform: scale(1.04); box-shadow: var(--shadow-lift); border-color: var(--accent); }
+.related-name { display: block; margin-top: 10px; font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--ink-strong); }
+.related-sub { display: block; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); }
+
+/* Artist discography as a printed catalogue. */
+.disco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 26px 20px; }
+.disco-card { text-align: left; padding: 0; }
+.disco-art {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art); border: 1px solid var(--line);
+  background: var(--surface-2); box-shadow: var(--shadow);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+}
+.disco-card:hover .disco-art { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
+.disco-title-line { display: flex; align-items: center; gap: 6px; margin-top: 11px; }
+.disco-name { font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.disco-meta { display: block; margin-top: 3px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ========================================================= discover rows */
+.shelf { margin: 36px 0 8px; }
+.shelf-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.shelf-title { margin: 0; font-size: 21px; font-weight: 600; color: var(--ink-strong); }
+.shelf-controls { display: flex; align-items: center; gap: 8px; }
+.shelf-arrow {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  transition: background-color var(--dur-fast) var(--ease-soft), color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.shelf-arrow:hover:not(:disabled) { background: var(--surface-3); color: var(--ink-strong); }
+.shelf-arrow:active:not(:disabled) { transform: scale(0.92); }
+.shelf-arrow:disabled { opacity: 0.3; cursor: default; }
+
+.shelf-track {
+  display: flex; gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  margin: 0 -24px;
+  padding: 2px 24px 6px;
+  scroll-padding-left: 24px;
+  /* Soft edges are a scrollability cue: a cover sliced flat by the container
+     edge reads as the end of the row, which it is not. Purely informational
+     and compositor-only. */
+  mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+}
+.shelf-track::-webkit-scrollbar { display: none; }
+.shelf-card { flex: 0 0 170px; width: 170px; scroll-snap-align: start; text-align: left; padding: 0; transition: transform var(--dur) var(--ease); }
+.shelf-card:hover { transform: translateY(-4px); }
+.shelf-art {
+  width: 100%; aspect-ratio: 1; object-fit: cover;
+  border-radius: var(--radius-art); border: 1px solid var(--line);
+  background: var(--surface-2); box-shadow: var(--shadow);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+}
+.shelf-card:hover .shelf-art { box-shadow: var(--shadow-lift); border-color: var(--accent); }
+.shelf-card.round .shelf-art { border-radius: 50%; }
+.shelf-title-line { display: flex; align-items: center; gap: 6px; margin-top: 11px; }
+.shelf-name { font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.shelf-sub { display: block; margin-top: 3px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shelf-skeleton { height: 170px; border-radius: var(--radius-art); background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%); background-size: 300% 100%; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+
+/* ============================================================ album videos */
+/* Posters, not embeds. Four iframes would pull in YouTube's player script and
+   set tracking cookies before the reader asked for anything; a poster costs one
+   keyless image request and the iframe is created on click. */
+.video-pending { padding: 10px 0 2px; }
+
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 24px 18px; }
+
+.video-card { display: block; width: 100%; padding: 0; text-align: left; }
+.video-poster {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-art);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft);
+}
+.video-card:hover .video-poster { border-color: var(--accent); box-shadow: var(--shadow-lift); }
+.video-thumb { width: 100%; height: 100%; object-fit: cover; }
+
+.video-play {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid; place-items: center;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  padding-left: 2px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease-soft);
+  opacity: 0.92;
+}
+.video-card:hover .video-play { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+
+.video-duration {
+  position: absolute; right: 6px; bottom: 6px;
+  padding: 1px 5px;
+  border-radius: var(--radius-control);
+  background: rgba(12, 10, 8, 0.82);
+  color: #f6efe1;
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.video-name {
+  margin-top: 10px;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color var(--dur-fast) var(--ease-soft);
+}
+.video-card:hover .video-name { color: var(--accent); }
+.video-meta {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Playing state: the card keeps its grid footprint and the poster is replaced
+   in place, so nothing reflows and closing restores the original markup. */
+.video-card.is-playing {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-art);
+  border: 1px solid var(--accent);
+  overflow: hidden;
+  background: #0c0a08;
+}
+.video-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-close {
+  position: absolute; top: 7px; right: 7px;
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(12, 10, 8, 0.78);
+  color: #f6efe1;
+  cursor: pointer;
+  z-index: 2;
+  transition: background-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
+}
+.video-close:hover { background: rgba(12, 10, 8, 0.95); transform: scale(1.08); }
+.video-card.is-playing .video-name,
+.video-card.is-playing .video-meta { display: none; }
+
+/* ======================================================== status and recovery */
+/* Undo toast. Bottom-centred so it never covers the sidebar or a shelf the
+   reader is looking at, and it self-dismisses after 6s. */
+.toast {
+  position: fixed;
+  left: 50%; bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: flex; align-items: center; gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 11px 14px 11px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-surface);
+  background: var(--surface-3);
+  color: var(--ink-strong);
+  box-shadow: var(--shadow-lift);
+  font-size: 13.5px;
+  animation: toastIn 0.28s var(--ease) both;
+}
+.toast[hidden] { display: none; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.toast-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast-action {
+  flex: none;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: var(--mono-weight);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background-color var(--dur-fast) var(--ease-soft), color var(--dur-fast) var(--ease-soft);
+}
+.toast-action:hover { background: var(--accent); color: var(--accent-ink); }
+
+/* A failed load used to be a dead end. This is the recovery affordance. */
+.error-recovery { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+/* ================================================================= help panel */
+.help-dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-surface);
+  padding: 0;
+  margin: auto;
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-lift);
+}
+.help-dialog::backdrop { background: rgba(12, 10, 8, 0.82); backdrop-filter: blur(5px); }
+.help-inner { position: relative; padding: 26px 28px 30px; }
+.help-title { margin: 4px 0 14px; font-size: 22px; font-weight: 600; color: var(--ink-strong); }
+.help-inner .eyebrow:not(:first-of-type) { margin-top: 24px; }
+.help-list { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; margin: 0; align-items: baseline; }
+.help-list dt { white-space: nowrap; }
+.help-list dd { margin: 0; font-size: 13.5px; color: var(--ink-strong); }
+.help-list strong { font-family: var(--font-display); font-weight: 600; color: var(--ink-strong); }
+.help-dialog kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 11px;
+}
+.help-colophon {
+  margin: 26px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-weight: var(--mono-weight);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+/* ================================================================== misc */
+.empty { padding: 56px 0; text-align: center; color: var(--muted); font-style: italic; }
+.empty.compact { padding: 18px 0; text-align: left; font-size: 13.5px; }
+
+.suggestion-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 14px; }
+.suggestion-row button {
+  padding: 5px 11px;
+  font-size: 13px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  transition: color var(--dur-fast) var(--ease-soft), border-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
+}
+.suggestion-row button:hover { color: var(--ink-strong); border-color: var(--accent); transform: translateY(-1px); }
+
+/* ====================================================== artwork reveal
+   Hiding is opt-in per image via .art-pending, applied by revealArt()
+   immediately before it binds the load handler. A render path that forgets the
+   call gets an instant-loading image rather than an invisible one. */
+img.album-art, img.result-thumb, img.artist-photo, img.disco-art, img.shelf-art, img.related-photo, img.video-thumb {
+  transition: opacity 0.45s var(--ease-soft), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft);
+}
+img.art-pending { opacity: 0; }
+img.art-pending.is-loaded { opacity: 1; }
+
+/* ================================================================= motion */
+.view-enter { animation: viewIn var(--dur) var(--ease) both; }
+@keyframes viewIn { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: none; } }
+.stagger-item { animation: itemIn 0.42s var(--ease) both; animation-delay: var(--stagger-delay, 0ms); }
+@keyframes itemIn { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .cover-tilt { perspective: none; }
+  .cover-tilt-inner { transform: none !important; }
+  /* The sheen is already a background-position slide, so suppressing it is just
+     the opacity; there is no transform on it left to override. */
+  .cover-tilt-inner::before { opacity: 0 !important; }
+  .cover-tilt-inner::after { transform: none !important; }
+  /* The vinyl keeps its affordance without the movement: it simply rests at its
+     out position instead of sliding to it. It has to read --vinyl-out rather
+     than a literal, or this would drag the disc back to the full slide and undo
+     the paper theme's trim. */
+  .vinyl { transition: none !important; transform: translateX(var(--vinyl-out)) !important; }
+  /* Stated explicitly rather than left to the global duration override above:
+     two permanently animated full-viewport layers are the most expensive thing
+     in the app, and a reader who asked for less motion should not pay for them.
+     The shelf mask is a static cue rather than movement, so it stays. */
+  body::before, body::after { animation: none !important; }
+}
+
+/* =============================================================== responsive */
+/* Labels drop to icons first, because the topbar has to hold brand, three
+   destinations, a search field and the theme toggle on one row. */
+@media (max-width: 940px) {
+  .nav-label { display: none; }
+  .nav-tab { padding: 7px 9px 9px; }
+  .nav-tab.active::after { left: 9px; right: 9px; }
+}
+
+@media (max-width: 1000px) {
+  /* The hero's gap narrows to 24px here, and --hero-gap has to follow it, or the
+     paper theme's disc would overshoot the text column by 12px. */
+  :root { --hero-gap: 24px; }
+  .album-hero { grid-template-columns: 210px minmax(0, 1fr); gap: 24px; }
+  .album-hero > .album-art, .album-hero > .art-placeholder, .album-hero .cover-tilt, .album-hero .cover-expand, .album-hero .hero-cover { width: 210px; }
+  .artist-hero { grid-template-columns: 160px minmax(0, 1fr); gap: 24px; }
+  .artist-hero > .artist-photo, .artist-hero > .art-placeholder { width: 160px; }
+  .track { grid-template-columns: 32px minmax(0, 1fr); }
+  .track-credit { display: none; }
+}
+
+@media (max-width: 720px) {
+  /* The hero stacks, so the text sits below the cover and there is nothing to
+     the right of the sleeve to collide with. The disc gets its full slide back
+     in both themes. This has to be redeclared for html.light specifically:
+     media queries add no specificity, so html.light (0,1,1) would otherwise
+     still be winning over :root (0,1,0) from further up the file. */
+  :root, html.light { --vinyl-out: -45%; }
+  .brand-name { display: none; }
+  .album-hero, .artist-hero { grid-template-columns: 1fr; }
+  .album-hero > .album-art, .album-hero > .art-placeholder, .album-hero .cover-expand, .album-hero .hero-cover { width: 100%; max-width: 300px; }
+  .artist-hero > .artist-photo, .artist-hero > .art-placeholder { width: 140px; }
+  .topbar-search kbd { display: none; }
+  .album-grid { grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); gap: 20px 14px; }
+  .disco-grid { grid-template-columns: repeat(auto-fill, minmax(142px, 1fr)); }
+  .page { padding: 18px 16px 60px; }
+  .result-row { grid-template-columns: 44px minmax(0, 1fr); }
+  .result-row .result-kind, .result-row .result-meta { display: none; }
+  .topbar { padding: 10px 16px; gap: 12px; }
+  .page-heading h1 { font-size: 24px; }
+}

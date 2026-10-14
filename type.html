@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kalm — type specimens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Every candidate at once, so the page itself is the comparison and no
+         switching is needed. Latin-subset weights measured at the bottom. -->
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Bodoni+Moda:opsz,wght@6..96,400..700&family=Courier+Prime:wght@400;700&family=Cutive+Mono&family=EB+Garamond:wght@400;500&family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif&family=Inter:wght@400;500;600&family=Literata:wght@400;600&family=Playfair+Display:wght@500;600&family=Space+Mono:wght@400;700&family=Spectral:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      /* Same tokens as styles.css, so the specimens are judged in the real
+         palette rather than a neutral one. */
+      :root {
+        --bg: #191713; --surface: #201d18; --surface-2: #2a2620; --surface-3: #35302a;
+        --ink: #cdc2ae; --ink-strong: #f6efe1; --muted: #a2977f; --faint: #91866e;
+        --line: #322d26; --accent: #c9873a; --accent-ink: #191713;
+        --radius-control: 4px;
+      }
+      html.light {
+        --bg: #f2ece0; --surface: #faf6ec; --surface-2: #ece4d4; --surface-3: #e2d8c4;
+        --ink: #443c31; --ink-strong: #221e18; --muted: #6d6252; --faint: #756950;
+        --line: #ddd2bd; --accent: #a6432a; --accent-ink: #faf6ec;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 40px 24px 80px;
+        background: var(--bg); color: var(--ink);
+        font-family: 'Spectral', Georgia, serif; font-size: 14.5px; line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 1180px; margin: 0 auto; }
+      header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+      h1 { margin: 0; color: var(--ink-strong); font-size: 30px; font-weight: 600; }
+      .note { color: var(--muted); font-size: 14px; max-width: 62ch; margin: 0 0 34px; }
+      button.toggle {
+        padding: 7px 15px; border: 1px solid var(--line); border-radius: var(--radius-control);
+        background: var(--surface-2); color: var(--ink-strong); cursor: pointer; font: inherit; font-size: 13.5px;
+      }
+      section { border-top: 1px solid var(--line); padding: 26px 0; }
+      h2 { margin: 0 0 4px; color: var(--ink-strong); font-size: 20px; font-weight: 600; }
+      .role { margin: 0 0 20px; color: var(--accent); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+      .row { margin: 0 0 20px; }
+      .name { display: block; color: var(--faint); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+      /* Real strings, at the real sizes and roles, so nothing is flattering. */
+      .big { font-size: 30px; font-weight: 600; color: var(--ink-strong); line-height: 1.1; }
+      .mid { font-size: 14.5px; font-weight: 600; color: var(--ink-strong); }
+      .body { font-size: 14px; color: var(--ink); }
+      .micro { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+      .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 2px; background: var(--accent); vertical-align: -1px; margin-right: 7px; }
+      .cost { color: var(--faint); font-size: 12px; }
+      /* Each candidate declares its own stack, so a swap is one line of CSS. */
+      .d-fraunces { font-family: 'Fraunces', serif; }
+      .d-playfair { font-family: 'Playfair Display', serif; }
+      .d-bodoni  { font-family: 'Bodoni Moda', serif; }
+      .d-instru  { font-family: 'Instrument Serif', serif; }
+      .d-space   { font-family: 'Space Mono', 'Courier New', monospace; }
+      .d-figtree { font-family: 'Figtree', system-ui, sans-serif; }
+      .d-inter   { font-family: 'Inter', system-ui, sans-serif; }
+      /* Melius reference tokens, quoted so the specimen is judged against the
+         system it is imitating rather than in a vacuum. */
+      .refgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 6px; }
+      .refcell { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+      .refcell b { display: block; color: var(--accent); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+      .refcell span { color: var(--ink-strong); font-size: 13px; }
+      /* Real card width, with the boundary drawn so truncation is visible. */
+      .cardbox { border-left: 2px solid var(--accent); padding-left: 10px; }
+      .cname {
+        font-size: 14.5px; font-weight: 600; color: var(--ink-strong);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        max-width: 170px; line-height: 1.7;
+      }
+      .cardbox .d-space { font-weight: 700; }
+      .verdict { margin: 6px 0 0; color: var(--faint); font-size: 12px; }
+      .b-spectral { font-family: 'Spectral', serif; }
+      .b-garamond{ font-family: 'EB Garamond', serif; }
+      .b-literata{ font-family: 'Literata', serif; }
+      .m-plex    { font-family: 'IBM Plex Mono', monospace; }
+      .m-space   { font-family: 'Space Mono', monospace; }
+      .m-courier { font-family: 'Courier Prime', monospace; }
+      .m-cutive  { font-family: 'Cutive Mono', monospace; }
+      .m-azeret  { font-family: 'Azeret Mono', monospace; }
+      mark { background: none; color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Type specimens</h1>
+        <button class="toggle" id="themeBtn">Switch to light</button>
+      </header>
+      <p class="note">
+        Every candidate rendered in the real Kalm palette at the real sizes and
+        roles. The strings are the ones the app actually uses. Latin-subset
+        weights are measured, not estimated.
+      </p>
+
+      <section>
+        <h2>Display</h2>
+        <p class="role">Album titles, artist names, shelf names</p>
+
+        <div class="row"><span class="name">Fraunces 600 — current</span>
+          <div class="d-fraunces big">Kind of Blue</div></div>
+        <div class="row"><span class="name">Playfair Display 600 · 75.0 KB</span>
+          <div class="d-playfair big">Kind of Blue</div></div>
+        <div class="row"><span class="name">Bodoni Moda 600 · 97.7 KB</span>
+          <div class="d-bodoni big">Kind of Blue</div></div>
+        <div class="row"><span class="name">Instrument Serif 400 · 42.1 KB</span>
+          <div class="d-instru big">Kind of Blue</div></div>
+
+        <div class="row"><span class="name">at body-title size, 14.5px</span>
+          <div class="d-fraunces mid">In Rainbows <span class="cost">— Fraunces</span></div></div>
+        <div class="row"><span class="name" style="color:var(--accent)">Bodoni at 14.5px — do not use here</span>
+          <div class="d-bodoni mid">In Rainbows</div></div>
+      </section>
+
+      <section>
+        <h2>Option B — Space Mono as the display face</h2>
+        <p class="role">
+          The one decision below. Measured: Space Mono is about 16% wider than
+          Fraunces on mixed-case text, and slightly <em>narrower</em> on all-caps,
+          because Fraunces caps are proportional. The pink rule marks the real
+          170px shelf card, so truncation is visible rather than theoretical.
+        </p>
+
+        <div class="row">
+          <span class="name">album hero, 42px · current</span>
+          <div class="d-fraunces big">Red (Expanded &amp; Remastered Original Album Mix)</div>
+          <div class="d-space big">Red (Expanded &amp; Remastered Original Album Mix)</div>
+          <p class="verdict">Fraunces 1008px &middot; Space Mono 1182px &middot; hero column ~1056px, so mono wraps to two lines</p>
+        </div>
+
+        <div class="row">
+          <span class="name">short title, 42px — unaffected either way</span>
+          <div class="d-fraunces big">Kind of Blue</div>
+          <div class="d-space big">Kind of Blue</div>
+          <p class="verdict">The failure case is long titles only</p>
+        </div>
+
+        <div class="row">
+          <span class="name">artist hero, 48px</span>
+          <div class="d-fraunces" style="font-size:34px;font-weight:600">Them Crooked Vultures</div>
+          <div class="d-space" style="font-size:34px;font-weight:700">Them Crooked Vultures</div>
+          <p class="verdict">Fraunces 536px &middot; Space Mono 617px &middot; both fit the column</p>
+        </div>
+
+        <div class="row">
+          <span class="name">section heading, 21px</span>
+          <div class="d-fraunces" style="font-size:21px;font-weight:600">Albums you might enjoy</div>
+          <div class="d-space" style="font-size:21px;font-weight:700">Albums you might enjoy</div>
+          <p class="verdict">244px &middot; 283px &middot; no practical difference</p>
+        </div>
+
+        <div class="row">
+          <span class="name">page H1, 30px</span>
+          <div class="d-fraunces" style="font-size:30px;font-weight:600">Discover</div>
+          <div class="d-space" style="font-size:30px;font-weight:700">Discover</div>
+          <p class="verdict">126px &middot; 147px</p>
+        </div>
+
+        <h2 style="margin-top:28px">Card names at real width</h2>
+        <p class="role">
+          Shelf and discography cards are 170px wide and single-line with an
+          ellipsis. The pink rule is that 170px.
+        </p>
+        <div class="row">
+          <span class="name">shelf card, 14.5px</span>
+          <div class="cardbox">
+            <div class="d-fraunces cname">Radiohead</div>
+            <div class="d-space cname">Radiohead</div>
+            <div class="d-fraunces cname">NO ME ARREPIENTO DE SENTIR TANTO</div>
+            <div class="d-space cname">NO ME ARREPIENTO DE SENTIR TANTO</div>
+            <div class="d-fraunces cname">Queens Of The Stone Age</div>
+            <div class="d-space cname">Queens Of The Stone Age</div>
+            <div class="d-fraunces cname">Choose Your Weapon</div>
+            <div class="d-space cname">Choose Your Weapon</div>
+          </div>
+          <p class="verdict">Rows alternate Fraunces / Space Mono. Truncation is similar, because both exceed 170px on the long ones</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Going grotesque — Fraunces vs Figtree vs Inter</h2>
+        <p class="role">
+          The whole display role. Kalm currently sets titles in Fraunces and body
+          in Spectral; both references (TASTE and Melius) use a grotesque
+          throughout, so this is the decision that decides whether Kalm reads as
+          an archival record sleeve or a tool. Weights are measured, not
+          estimated.
+        </p>
+
+        <h2 style="margin-top:22px">Display, 42px</h2>
+        <p class="role">Album titles run clamp(28px, 4vw, 42px). Melius tops out at 56px.</p>
+        <div class="row"><span class="name">Fraunces 600 — current</span>
+          <div class="d-fraunces big">Kind of Blue</div>
+          <div class="d-figtree" style="font-size:30px;font-weight:600;line-height:1.15">Kind of Blue</div>
+          <div class="d-inter" style="font-size:30px;font-weight:600;line-height:1.15">Kind of Blue</div>
+          <p class="verdict">Fraunces develops hairlines at this size; the grotesques stay even. Measured at 30px: 177px / 164px / 175px</p></div>
+
+        <div class="row"><span class="name">long title — the wrapping case</span>
+          <div class="d-fraunces big">Red (Expanded &amp; Remastered Original Album Mix)</div>
+          <div class="d-figtree" style="font-size:30px;font-weight:600;line-height:1.15">Red (Expanded &amp; Remastered Original Album Mix)</div>
+          <div class="d-inter" style="font-size:30px;font-weight:600;line-height:1.15">Red (Expanded &amp; Remastered Original Album Mix)</div>
+          <p class="verdict">Hero column ≈1056px. Measured at 30px: Fraunces 728px · Figtree 683px (0.94×) · Inter 721px (0.99×). Neither grotesque wraps wider than Fraunces</p></div>
+
+        <div class="row"><span class="name">section heading, 21px</span>
+          <div class="d-fraunces" style="font-size:21px;font-weight:600">Albums you might enjoy</div>
+          <div class="d-figtree" style="font-size:21px;font-weight:600">Albums you might enjoy</div>
+          <div class="d-inter" style="font-size:21px;font-weight:600">Albums you might enjoy</div></div>
+
+        <h2 style="margin-top:22px">Body, 14px</h2>
+        <p class="role">
+          The workhorse size in both Melius and Kalm. A grotesque at 14px has far
+          less character than a serif does — this is where the change is felt
+          most, and the place to decide whether losing it matters.
+        </p>
+        <div class="row"><span class="name">Spectral 400 — current</span>
+          <div class="b-spectral body">Miles Davis recorded the album in a single session at Columbia Studio B, and the restraint of the arrangements is the record itself.</div></div>
+        <div class="row"><span class="name">Figtree 400 · 59.1 KB for 400/500/600</span>
+          <div class="d-figtree body">Miles Davis recorded the album in a single session at Columbia Studio B, and the restraint of the arrangements is the record itself.</div></div>
+        <div class="row"><span class="name">Inter 400 · 141.4 KB for 400/500/600</span>
+          <div class="d-inter body">Miles Davis recorded the album in a single session at Columbia Studio B, and the restraint of the arrangements is the record itself.</div>
+          <p class="verdict">2.4&times; the weight of Figtree for a very similar result. Inter is the nearer match to Melius's Ease Standard</p></div>
+
+        <h2 style="margin-top:22px">Mono, 10.5px — unchanged</h2>
+        <p class="role">Settled already; shown so the three roles can be judged as one system rather than the sans in isolation.</p>
+        <div class="row"><span class="name">Azeret Mono 500 — in use now</span>
+          <div class="m-azeret micro"><span class="swatch"></span>Watch and listen</div>
+          <div class="m-azeret micro" style="color:var(--muted)">2.4M FANS · 1967 · 3:49 · NO. 4</div></div>
+
+        <h2 style="margin-top:22px">Melius reference tokens</h2>
+        <p class="role">Read straight off their shipped CSS, so these are their values and not a description of them.</p>
+        <div class="refgrid">
+          <div class="refcell"><b>Radius</b><span>3 / 4 / 6 / 9999px — sharp, same as Kalm today</span></div>
+          <div class="refcell"><b>Motion</b><span>80 / 150 / 200ms, plus a spring at cubic-bezier(0.34, 1.56, 0.64, 1)</span></div>
+          <div class="refcell"><b>Shadows</b><span>5% / 8% / 12% black. Kalm's dark theme is at 45%</span></div>
+          <div class="refcell"><b>Body size</b><span>14px actual usage, from an 11px token base</span></div>
+          <div class="refcell"><b>Spacing</b><span>2 / 3 / 7 / 10 / 12px — a deliberately tight scale</span></div>
+          <div class="refcell"><b>Accent</b><span>hsl(228 100% 70%) periwinkle on dark; near-black on light</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Body</h2>
+        <p class="role">Liner notes, result rows, dialogs</p>
+
+        <div class="row"><span class="name">Spectral 400 — current · 65.9 KB</span>
+          <div class="b-spectral body">Miles Davis recorded the album in a single session at Columbia Studio B, and the restraint of the arrangements is the record itself.</div></div>
+        <div class="row"><span class="name">EB Garamond 400 · 86.6 KB</span>
+          <div class="b-garamond body">Miles Davis recorded the album in a single session at Columbia Studio B, and the restraint of the arrangements is the record itself.</div></div>
+        <div class="row"><span class="name">Literata 400 · 76.2 KB</span>
+          <div class="b-literata body">Miles Davis recorded the album in a single session at Columbia Studio B, and the restraint of the arrangements is the record itself.</div></div>
+      </section>
+
+      <section>
+        <h2>Mono</h2>
+        <p class="role">Eyebrows, counts, durations, durations, "No. 4"</p>
+
+        <div class="row"><span class="name">IBM Plex Mono 500 — current · 28.9 KB</span>
+          <div class="m-plex micro"><span class="swatch"></span>Watch and listen</div>
+          <div class="m-plex micro" style="color:var(--muted)">2.4M FANS · 1967 · 3:49 · NO. 4</div></div>
+
+        <div class="row"><span class="name">Space Mono 400 · 16.1 KB — <mark>no 500 weight exists</mark></span>
+          <div class="m-space micro"><span class="swatch"></span>Watch and listen</div>
+          <div class="m-space micro" style="color:var(--muted)">2.4M FANS · 1967 · 3:49 · NO. 4</div>
+          <div class="m-space micro" style="color:var(--faint); margin-top:6px">at weight 700, the fallback the app would get</div>
+          <div class="m-space micro" style="color:var(--faint); font-weight:700">2.4M FANS · 1967 · 3:49 · NO. 4</div></div>
+
+        <div class="row"><span class="name">Courier Prime 400 · 58.1 KB</span>
+          <div class="m-courier micro"><span class="swatch"></span>Watch and listen</div>
+          <div class="m-courier micro" style="color:var(--muted)">2.4M FANS · 1967 · 3:49 · NO. 4</div></div>
+
+        <div class="row"><span class="name">Cutive Mono 400 · 21.3 KB</span>
+          <div class="m-cutive micro"><span class="swatch"></span>Watch and listen</div>
+          <div class="m-cutive micro" style="color:var(--muted)">2.4M FANS · 1967 · 3:49 · NO. 4</div></div>
+
+        <div class="row"><span class="name">Azeret Mono 500 · 51.1 KB</span>
+          <div class="m-azeret micro"><span class="swatch"></span>Watch and listen</div>
+          <div class="m-azeret micro" style="color:var(--muted)">2.4M FANS · 1967 · 3:49 · NO. 4</div></div>
+      </section>
+
+      <section>
+        <h2>Pairings</h2>
+        <p class="role">How they read together</p>
+        <div class="row"><span class="name">Current — Fraunces / Spectral / IBM Plex Mono</span>
+          <div class="d-fraunces big">Blue Train</div>
+          <div class="b-spectral body">John Coltrane recorded it the day after his birthday.</div>
+          <div class="m-plex micro">1957 · 3:47 · 4 FANS</div></div>
+        <div class="row"><span class="name">Instrument Serif / EB Garamond / Space Mono</span>
+          <div class="d-instru big">Blue Train</div>
+          <div class="b-garamond body">John Coltrane recorded it the day after his birthday.</div>
+          <div class="m-space micro">1957 · 3:47 · 4 FANS</div></div>
+        <div class="row"><span class="name">Bodoni Moda / Literata / Cutive Mono</span>
+          <div class="d-bodoni big">Blue Train</div>
+          <div class="b-literata body">John Coltrane recorded it the day after his birthday.</div>
+          <div class="m-cutive micro">1957 · 3:47 · 4 FANS</div></div>
+      </section>
+    </div>
+    <script>
+      const btn = document.getElementById('themeBtn');
+      btn.onclick = () => {
+        const light = document.documentElement.classList.toggle('light');
+        btn.textContent = light ? 'Switch to dark' : 'Switch to light';
+      };
+    </script>
+  </body>
+</html>
