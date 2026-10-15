@@ -67,6 +67,8 @@ matter rather than a dashboard.
 - Artist pages with photo and discography; album pages with cover, a printed
   metadata table, tracklist, credits, videos and related artists
 - Click any cover for a large centred view with 3D tilt
+- A record peeks out from behind the album sleeve on hover or keyboard focus,
+  and stops at the gap so it never sits behind the title
 - Favorites and recently viewed stored locally; themes remembered between visits
 - Responsive down to icon-only navigation, with `?` for shortcuts and a card key
 
@@ -252,6 +254,55 @@ would reintroduce the drift.
 `.cover-tilt-inner::after` deliberately keeps its Z offset: that one is a drop
 shadow, which *should* lag in the plane as the sleeve tilts, and being blurred
 it has no hard edge to expose.
+
+### The vinyl disc
+
+The album hero has a record peeking out from behind the sleeve, on hover and on
+keyboard focus. It is decorative: `aria-hidden="true"`, `pointer-events: none`,
+and no text for a screen reader to read. It does not spin.
+
+Three things about it are load-bearing, and each one was a bug first.
+
+**The disc is a sibling of `.cover-expand`, never a child.** Inside the button,
+`.cover-expand:hover { transform: scale(1.015) }` creates a stacking context,
+which traps the disc's `z-index: -1` inside the button. The button then paints
+as one unit at `z-index: auto`, which is *above* `.album-hero-text`, so the disc
+covered the album title and the artist name. It only broke on hover, because the
+transform is what creates the context. A `.hero-cover` wrapper now sizes the
+disc to the cover without putting it inside the button: it carries no transform,
+so it creates no stacking context and the `-1` resolves to the root. Moving the
+span back inside `.cover-expand` reintroduces the bug.
+
+**`--hero-gap` must track `.album-hero`'s real grid gap.** `--vinyl-out` is
+`calc(-100% + var(--hero-gap))`, which travels the disc exactly as far as the
+clear space to the right of the sleeve, so it stops level with the text column
+and never passes behind the title. It is 36px at the default 300px cover and
+24px at the 210px one, so changing the grid gap without changing `--hero-gap`
+makes the disc overshoot into the text.
+
+**The reduced-motion rule has to read `var(--vinyl-out)`, not a literal.** Under
+`prefers-reduced-motion: reduce` the disc rests at its out position instead of
+sliding, which is the same value the hover rule uses.
+
+There is one disc for both themes — `--disc-ring-a` / `--disc-ring-b` are
+declared on `:root` and deliberately not redeclared per theme. That is only safe
+because the disc is trimmed, and the reason is polarity: dark works because
+light type sits on a dark disc, but the paper theme's album title is near-black
+(`#221e18`), so a disc reaching the text column landed at **1.01:1** and the
+title did not degrade, it vanished. No colour fixes that with a full slide —
+oxblood `--accent` needs a disc luminance of 0.728 to stay readable, which is a
+disc invisible as a disc. Trimming means the disc sits behind no text at all,
+which frees the colour completely. `--vinyl-out` is restored to `-45%` at
+`max-width: 720px`, where the hero stacks and the text is below the cover.
+
+**Testing paint order with `elementFromPoint` will lie to you.** The disc is
+`pointer-events: none`, so hit-testing skips it entirely and
+`elementFromPoint` returns the album title even while the disc is on top of it.
+To check the real paint order, set `pointer-events: auto` on the disc first and
+sweep a grid of probe points across it, asserting that none return the disc.
+Disabling `transition` during that sweep matters too: `getBoundingClientRect()`
+immediately after changing `transform` samples the *start* of the transition, not
+the settled value.
 
 ## Caching
 
