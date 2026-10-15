@@ -53,9 +53,8 @@ matter rather than a dashboard.
   6px on the search field, toast and dialogs, 4px on controls, 3px on artwork,
   and circles left as circles on the shelf arrows, close buttons, play button and
   the brand tile
-- **Type:** Fraunces for titles and headings, Spectral for body and UI copy,
-  IBM Plex Mono uppercase and letterspaced for every micro-label (counts, years,
-  formats, durations, metadata keys)
+- **Type:** Figtree throughout, Azeret Mono uppercase and letterspaced for every
+  micro-label (counts, years, formats, durations, metadata keys)
 - **Palette:** dark is a matte board sleeve (warm near-black, cream type, amber
   accent); light is aged liner paper (cream ground, brown-black ink, oxblood
   accent)
@@ -216,9 +215,39 @@ backgrounded tab does not resume with a large jump.
 
 ### Typography weight
 
-Three faces, three jobs: **Fraunces** for titles, **Spectral** for reading copy,
-**Azeret Mono** for the small uppercase labels (counts, durations, years, format
-tags, metadata keys).
+Two faces, two jobs: **Figtree** for everything, **Azeret Mono** for the small
+uppercase labels (counts, durations, years, format tags, metadata keys).
+
+`--font-display` and `--font-body` both resolve to Figtree. That was not the
+starting point: titles were Fraunces and body was Spectral, and moving to a
+grotesque throughout was the change that decides whether Kalm reads as an
+archival record sleeve or as a tool. Both references it was built against use a
+grotesque throughout, and the specimens were measured rather than eyeballed —
+Figtree wraps at 0.94x of Fraunces on the long-title case, so nothing reflowed.
+
+The saving is the reason it was worth doing. Latin subset, measured from the
+Google Fonts CSS:
+
+| | Latin |
+|---|---|
+| Fraunces + Spectral + Azeret Mono | 182.6 KB |
+| Figtree + Azeret Mono | 121.7 KB |
+
+60.9 KB lighter, 33% of the Latin subset, and one family instead of two. Figtree's
+70.6 KB *includes* the italic: `.artist-aliases` and `.empty` set
+`font-style: italic` and used to inherit Spectral's. Without `ital` in the
+request the browser synthesises a fake oblique. Only 400/500/600 are requested —
+the stylesheet uses 600 nineteen times, 500 and 400 once each, and nothing uses
+300 or 700.
+
+Inter was the alternative and cost 141.4 KB against Figtree's 70.6 KB for a
+visually similar result. What is given up is real: Fraunces has an optical-size
+axis and develops hairlines at 42px, and a grotesque at 14px carries less
+character than a serif does. That was the trade, taken deliberately.
+
+Every rule reaches its family through `--font-display` / `--font-body` /
+`--font-mono`; no rule hardcodes one, so the swap is complete by construction
+rather than by having found every call site.
 
 `--mono-weight` exists because those labels are a single role at a single
 weight, and the family that came before it only shipped 400 and 700. Space Mono

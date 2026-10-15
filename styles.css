@@ -32,8 +32,18 @@
   --radius-control: 4px;
   --radius-art: 3px;
   --radius-surface: 6px;
-  --font-display: 'Fraunces', 'Spectral', Georgia, serif;
-  --font-body: 'Spectral', Georgia, 'Times New Roman', serif;
+  /* Display and body are the same face on purpose. Fraunces + Spectral cost
+     131.5 KB of the Latin subset between them; Figtree does both roles in
+     70.6 KB including the italic. Neither grotesque wraps wider than Fraunces
+     was — Figtree measures 0.94x on the long-title case — so nothing reflows.
+
+     The italic is requested because two rules set font-style: italic
+     (.artist-aliases, .empty) and inherited Spectral's. Without it the browser
+     would synthesise a fake oblique. Only 400/500/600 are requested: the
+     stylesheet uses 600 nineteen times, 500 and 400 once each, and nothing
+     uses 300 or 700. */
+  --font-display: 'Figtree', system-ui, sans-serif;
+  --font-body: 'Figtree', system-ui, sans-serif;
   --font-mono: 'Azeret Mono', 'Courier New', monospace;
   /* One token because the mono labels are a single role at a single weight.
      Space Mono shipped only 400 and 700, which forced this to 700 and made the
