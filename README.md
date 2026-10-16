@@ -64,12 +64,15 @@ matter rather than a dashboard.
   the brand tile
 - **Type:** Figtree throughout, Azeret Mono uppercase and letterspaced for every
   micro-label (counts, years, formats, durations, metadata keys)
-- **Palette:** dark is a matte board sleeve (warm near-black, cream type, amber
-  accent); light is aged liner paper (cream ground, brown-black ink, oxblood
-  accent)
+- **Palette:** "lush forest". Dark is deep canopy (`--bg` `#253d2c`, a near-black
+  green) with `--accent` `#8fcca0`; light is new growth (`--bg` `#cffcdc`, pale
+  mint) with `--accent` `#2e6f40`. The source palette supplied four colours and
+  this needs twelve tokens, so the intermediates are derived and then *solved*
+  for contrast rather than eyeballed — see "Accessibility" below for why
+  `--accent` is not the palette's own `#68BA7F`
 - **Texture:** a faint ruled grid across the page, two `repeating-linear-gradient`
   layers, no JS and no network request, and static rather than animated
-- Hairline rules instead of glows, near-square corners, warm-tinted shadows
+- Hairline rules instead of glows, near-square corners, green-tinted shadows
 - Tabbed search results: **Top results** interleaves artists, tracks and albums,
   with separate **Artists**, **Tracks** and **Albums** tabs and live counts
 - Artist pages with photo and discography; album pages with cover, a printed
@@ -109,8 +112,22 @@ changed, and why:
   information — record type and year on the album page — was kept.
 
 Every text and background pair in both themes clears WCAG AA (4.5:1) for body
-and small text. Micro-label tones were measured and adjusted rather than chosen
-by eye, since warm palettes tend to fail on the faintest tier.
+and small text — 17 pairs per theme, verified by reading the tokens back out of
+`styles.css` rather than from a draft. Micro-label tones were measured and
+adjusted rather than chosen by eye, and `--faint` is the binding constraint in
+both themes, landing at exactly 4.50:1 against `--surface-2`.
+
+Two values are deliberately *not* the source palette's own:
+
+- **`--accent` is `#8fcca0`, not `#68BA7F`.** The palette green measures 5.00:1
+  on `--bg` but **4.28:1** on `--surface`, and that is a live failure rather than
+  a theoretical one: `.result-row:hover` paints `--surface` underneath
+  accent-coloured type. The solved value clears 5.43:1 there.
+- **`--on-scrim` is a separate token.** The play button, close buttons and toast
+  draw light glyphs on near-black scrims. They cannot follow `--ink-strong`,
+  which is dark green on the light theme and would disappear against a black
+  overlay. Verified by compositing each real scrim alpha over each theme's
+  background; the worst case is 4.76:1.
 
 ### Known limitations
 
@@ -342,13 +359,19 @@ sliding, which is the same value the hover rule uses.
 There is one disc for both themes — `--disc-ring-a` / `--disc-ring-b` are
 declared on `:root` and deliberately not redeclared per theme. That is only safe
 because the disc is trimmed, and the reason is polarity: dark works because
-light type sits on a dark disc, but the paper theme's album title is near-black
-(`#221e18`), so a disc reaching the text column landed at **1.01:1** and the
+light type sits on a dark disc, but the light theme's album title is near-black
+(`#16281c`), so a disc reaching the text column landed at **1.01:1** and the
 title did not degrade, it vanished. No colour fixes that with a full slide —
-oxblood `--accent` needs a disc luminance of 0.728 to stay readable, which is a
-disc invisible as a disc. Trimming means the disc sits behind no text at all,
-which frees the colour completely. `--vinyl-out` is restored to `-45%` at
-`max-width: 720px`, where the hero stacks and the text is below the cover.
+the light theme's `--accent` `#2e6f40` needs a disc luminance of 0.728 to stay
+readable, which is a disc invisible as a disc. Trimming means the disc sits
+behind no text at all, which frees the colour completely. `--vinyl-out` is
+restored to `-45%` at `max-width: 720px`, where the hero stacks and the text is
+below the cover.
+
+The disc stays a neutral grey (`#767b77` / `#868c87`) rather than joining the
+palette. A record is not green, and a green disc reads as foliage. The previous
+warm grey was cooled rather than tinted, because it had enough brown in it to
+look like a smudge on this background.
 
 **Testing paint order with `elementFromPoint` will lie to you.** The disc is
 `pointer-events: none`, so hit-testing skips it entirely and
