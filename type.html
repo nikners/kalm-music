@@ -13,15 +13,10 @@
       /* Same tokens as styles.css, so the specimens are judged in the real
          palette rather than a neutral one. */
       :root {
-        --bg: #253d2c; --surface: #2c4834; --surface-2: #34553d; --surface-3: #3d6247;
-        --ink: #b8d8c0; --ink-strong: #e8f5eb; --muted: #9bc4a6; --faint: #a9c5b1;
-        --line: #3a5642; --accent: #8fcca0; --accent-ink: #14261a;
+        --bg: #ffffe3; --surface: #f7f7dc; --surface-2: #ededd2; --surface-3: #e2e2c7;
+        --ink: #4a4a4a; --ink-strong: #333333; --muted: #5c5c5c; --faint: #585858;
+        --line: #d2d2b8; --accent: #5a6978; --accent-ink: #ffffe3;
         --radius-control: 4px;
-      }
-      html.light {
-        --bg: #cffcdc; --surface: #e8f7ee; --surface-2: #dbf2e3; --surface-3: #cdeada;
-        --ink: #2a4632; --ink-strong: #16281c; --muted: #456b50; --faint: #52735a;
-        --line: #a8cdb4; --accent: #2e6f40; --accent-ink: #eaf7ee;
       }
       * { box-sizing: border-box; }
       body {
@@ -88,7 +83,6 @@
     <div class="wrap">
       <header>
         <h1>Type specimens</h1>
-        <button class="toggle" id="themeBtn">Switch to light</button>
       </header>
       <p class="note">
         Every candidate rendered in the real Kalm palette at the real sizes and
@@ -234,7 +228,7 @@
         <div class="refgrid">
           <div class="refcell"><b>Radius</b><span>3 / 4 / 6 / 9999px — sharp, same as Kalm today</span></div>
           <div class="refcell"><b>Motion</b><span>80 / 150 / 200ms, plus a spring at cubic-bezier(0.34, 1.56, 0.64, 1)</span></div>
-          <div class="refcell"><b>Shadows</b><span>5% / 8% / 12% black. Kalm's dark theme is at 45%</span></div>
+          <div class="refcell"><b>Shadows</b><span>5% / 8% / 12% black. Kalm sits at 12% and 20% on an ivory ground</span></div>
           <div class="refcell"><b>Body size</b><span>14px actual usage, from an 11px token base</span></div>
           <div class="refcell"><b>Spacing</b><span>2 / 3 / 7 / 10 / 12px — a deliberately tight scale</span></div>
           <div class="refcell"><b>Accent</b><span>hsl(228 100% 70%) periwinkle on dark; near-black on light</span></div>
@@ -298,11 +292,8 @@
       </section>
     </div>
     <script>
-      const btn = document.getElementById('themeBtn');
-      btn.onclick = () => {
-        const light = document.documentElement.classList.toggle('light');
-        btn.textContent = light ? 'Switch to dark' : 'Switch to light';
-      };
+      // One theme, so there is nothing to switch. The button was removed along
+      // with html.light rather than left as a control that does nothing.
     </script>
   </body>
 </html>

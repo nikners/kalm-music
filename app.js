@@ -1338,20 +1338,14 @@ async function resolveMissingAlbums(ids, type){
   if (state.view === 'collection' && state.collectionType === type) renderCollection(type);
 }
 
-/* ------------------------------------------------------------------- theme */
-const THEME_KEY = 'kalm-theme';
-function applyTheme(theme){
-  document.documentElement.classList.toggle('light', theme === 'light');
-  $('#themeToggle').textContent = theme === 'light' ? '☀' : '◐';
-  $('#themeToggle').setAttribute('aria-label', theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
-}
-
 /* ------------------------------------------------------------------- boot */
 migrateLegacyStorage();
 state.favorites = new Set(readList(FAVORITES_KEY, []).map(String));
 state.recent = readList(RECENT_KEY, []).map(String).slice(0, RECENT_LIMIT);
 if (migratedCache) writeList(ALBUM_CACHE_KEY, albumCache);
-applyTheme(localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark');
+// There is one theme, so there is nothing to apply and nothing to store. The
+// key any earlier version wrote is dropped rather than left orphaned.
+localStorage.removeItem('kalm-theme');
 
 $('#tabBar').innerHTML = TABS.map(([key, label], i) =>
   `<button class="tab${i === 0 ? ' active' : ''}" data-tab="${key}">${label}<span class="tab-count"></span></button>`).join('');
@@ -1393,12 +1387,6 @@ $$('.nav-tab').forEach(b => b.onclick = () => {
   if (b.dataset.view === 'discover' || b.dataset.view === 'index') show(b.dataset.view);
   else renderCollection(b.dataset.view);
 });
-
-$('#themeToggle').onclick = () => {
-  const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
-  localStorage.setItem(THEME_KEY, next);
-  applyTheme(next);
-};
 
 $('#brandHome').onclick = () => {
   beginNav();

@@ -1,45 +1,54 @@
 /* ============================================================== Kalm tokens
-   Dark (default) is deep canopy; html.light is new growth.
+   One theme: "ink wash". Charcoal, cool grey, soft ivory, slate blue.
 
-   Every text/background pair in both themes clears WCAG AA. The palette only
-   supplies four values and this file needs twelve, so the intermediates are
-   derived from the two anchors and then solved for contrast rather than
-   eyeballed â€” a first pass that used the palette's own #68BA7F for --accent
-   measured 4.28:1 on --surface, which is a real failure because
-   .result-row:hover paints that surface under accent-coloured type. */
+   This is a light-theme palette, and that is not a preference. The slate is
+   darker than its own greys (L=0.212 against charcoal 0.069), so it works as
+   an accent on a light ground and cannot work as one on a dark one. Measured:
+   slate #6D8196 is 3.95:1 on ivory and 2.21:1 on charcoal, and no ground
+   darker than #161616 lets it clear 4.5 at all. Forcing it into a dark theme
+   pushed the accent to #DAE5F1, which is no longer slate. So rather than
+   desaturate the palette in both directions, there is one theme.
+
+   All 23 text/background pairs clear WCAG AA, tightest 4.73 (--accent on
+   --surface-2). The palette supplies four values and this file needs thirteen,
+   so the rest are derived and then SOLVED for contrast rather than eyeballed.
+
+   Two values are deliberately not the palette's own: --accent is the slate
+   darkened 25% (3.37:1 unmodified on --surface-2), and --muted #5c5c5c exists
+   because #6e6e6e measured 4.28:1 there. */
 :root {
-  --bg: #253d2c;
-  --surface: #2c4834;
-  --surface-2: #34553d;
-  --surface-3: #3d6247;
-  --surface-4: #4a7254;
-  --ink: #b8d8c0;
-  --ink-strong: #e8f5eb;
-  --muted: #9bc4a6;
+  --bg: #ffffe3;
+  --surface: #f7f7dc;
+  --surface-2: #ededd2;
+  --surface-3: #e2e2c7;
+  --surface-4: #d6d6bc;
+  --ink: #4a4a4a;
+  --ink-strong: #333333;
+  --muted: #5c5c5c;
   /* --faint carries every micro-label, so it must clear 4.5:1 on --bg AND on
      every surface above it, not just the page. It is the binding constraint in
-     both themes; the palette's own mid-greens do not clear it. */
-  --faint: #a9c5b1;
-  --line: #3a5642;
+     the palette's own mid-greys do not clear it. */
+  --faint: #585858;
+  --line: #d2d2b8;
   /* Solved, not the palette's #68BA7F: see the header note. */
-  --accent: #8fcca0;
-  --accent-ink: #14261a;
-  /* Glyphs that sit on a near-black scrim â€” play button, close, toast. These
-     cannot follow --ink-strong, which is dark green on the paper theme and
-     would vanish against a black overlay. */
-  --on-scrim: #e8f5eb;
-  --shadow: 0 2px 8px rgba(10, 26, 16, 0.45);
-  --shadow-lift: 0 10px 26px rgba(10, 26, 16, 0.6);
+  --accent: #5a6978;
+  --accent-ink: #ffffe3;
+  /* Glyphs that sit on a near-black scrim — play button, close, toast. These
+     cannot follow --ink-strong, which is dark here and would
+     vanish against a black overlay. */
+  --on-scrim: #ffffe3;
+  --shadow: 0 2px 8px rgba(24, 24, 24, 0.12);
+  --shadow-lift: 0 10px 26px rgba(24, 24, 24, 0.2);
   /* Page texture is a ruled grid rather than film grain. A catalogue of
      records is a grid of things, and ruling reads as index; noise read as
      paper. It is static, which also retires two animated fixed full-viewport
      layers that were the most expensive thing in the app. */
   --grid-size: 120px;
-  --grid-line: rgba(255, 255, 255, 0.032);
+  --grid-line: rgba(0, 0, 0, 0.045);
   --ease: cubic-bezier(0.22, 0.61, 0.24, 1);
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
   /* Overshoots past its target and settles back. Used for anything that
-     arrives rather than departs â€” lifts, reveals, the cover dialog. Not used
+     arrives rather than departs — lifts, reveals, the cover dialog. Not used
      for the vinyl slide, which should stay linear-feeling and predictable. */
   --ease-spring: cubic-bezier(0.275, 0.6, 0.16, 1.24);
   --dur: 0.32s;
@@ -60,7 +69,7 @@
   /* Display and body are the same face on purpose. Fraunces + Spectral cost
      131.5 KB of the Latin subset between them; Figtree does both roles in
      70.6 KB including the italic. Neither grotesque wraps wider than Fraunces
-     was â€” Figtree measures 0.94x on the long-title case â€” so nothing reflows.
+     was — Figtree measures 0.94x on the long-title case — so nothing reflows.
 
      The italic is requested because two rules set font-style: italic
      (.artist-aliases, .empty) and inherited Spectral's. Without it the browser
@@ -76,7 +85,7 @@
      the weight they were always asking for. */
   --mono-weight: 500;
   /* ---- the record in the sleeve --------------------------------------
-     One disc, one travel distance, both themes. These live on :root and are
+     One disc, one travel distance. It lives on :root and is
      deliberately NOT redeclared per theme.
 
      The disc travels only as far as the hero's grid gap, so it stops level
@@ -85,15 +94,15 @@
      the disc across the artist name, the accent label and the metadata table.
      The gap-sized peek reads as a record tucked in the sleeve.
 
-     Trimming is also what makes one disc colour safe for both themes. The
-     themes have opposite polarity â€” dark works because light type sits on a
-     dark disc, but the light theme's title is near-black (#16281c), so a disc reaching
+     Trimming is also what makes the disc safe beside the title. The
+     themes have opposite polarity — dark works because light type sits on a
+     the title here is charcoal (#4a4a4a), so a disc reaching
      the text landed at 1.01:1 and the title simply vanished. With the disc
      behind no text at all, the colour is free, so the rings are one grey that
-     has to hold up against #253d2c and #cffcdc alike.
+     has to hold up against #ffffe3 and the surfaces above it.
 
      Kept a neutral grey rather than pulling the disc into the palette: a record
-     is not green, and a green disc reads as foliage. The original warm grey had
+     is not green, and a tinted disc reads as decoration. The original warm grey had
      enough brown in it to look like a smudge on this background, so it is
      cooled rather than tinted.
 
@@ -103,29 +112,6 @@
   --vinyl-out: calc(-100% + var(--hero-gap));
   --disc-ring-a: #767b77;
   --disc-ring-b: #868c87;
-}
-
-/* New growth: pale mint ground, dark forest accent. */
-html.light {
-  --bg: #cffcdc;
-  --surface: #e8f7ee;
-  --surface-2: #dbf2e3;
-  --surface-3: #cdeada;
-  --surface-4: #bedfcb;
-  --ink: #2a4632;
-  --ink-strong: #16281c;
-  --muted: #456b50;
-  --faint: #52735a;
-  --line: #a8cdb4;
-  --accent: #2e6f40;
-  --accent-ink: #eaf7ee;
-  --shadow: 0 2px 6px rgba(24, 62, 36, 0.12);
-  --shadow-lift: 0 10px 24px rgba(24, 62, 36, 0.2);
-  --grid-line: rgba(0, 0, 0, 0.045);
-  /* No disc overrides here on purpose. --vinyl-out and --disc-ring-a/b are
-     inherited from :root, so paper gets exactly the same disc, in exactly the
-     same colour, travelling exactly as far as dark. The reason that is safe is
-     documented on :root. */
 }
 
 * { box-sizing: border-box; }
@@ -487,7 +473,7 @@ img { display: block; max-width: 100%; }
    1. It is a SIBLING of .cover-expand, not a child. Inside the button, the
       `transform: scale(1.015)` on hover created a stacking context and trapped
       its z-index:-1 inside the button, which then painted as one unit ABOVE
-      .album-hero-text â€” so the disc covered the album title and artist name.
+      .album-hero-text — so the disc covered the album title and artist name.
       That failure is invisible to elementFromPoint while the disc is
       pointer-events:none, because hit-testing skips it entirely.
 
@@ -502,7 +488,7 @@ img { display: block; max-width: 100%; }
 
    Offset maths, all relative to the cover: left:100% is the sleeve's right edge.
    translateX(-100%) parks the disc entirely behind the sleeve. How far it
-   travels is --vinyl-out, which differs per theme â€” dark slides the full third,
+   travels is --vinyl-out, which differs per theme — dark slides the full third,
    paper stops at the gap so the disc never reaches the text. width:84% and
    margin-top:-42% are percentages of the cover, so the disc and its centring
    rescale with the responsive widths. */
@@ -524,7 +510,7 @@ img { display: block; max-width: 100%; }
       var(--disc-ring-a) 0 2px, var(--disc-ring-b) 2px 4px);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.07),
-    0 6px 18px rgba(8, 20, 12, 0.55);
+    0 6px 18px rgba(24, 24, 24, 0.55);
   transform: translateX(-100%);
   transition: transform var(--dur) var(--ease);
 }
@@ -535,7 +521,7 @@ img { display: block; max-width: 100%; }
   display: grid; place-items: center;
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: rgba(8, 20, 12, 0.62);
+  background: rgba(24, 24, 24, 0.62);
   color: var(--on-scrim);
   opacity: 0;
   transform: scale(0.85);
@@ -545,18 +531,18 @@ img { display: block; max-width: 100%; }
 .cover-expand:hover .cover-expand-hint, .cover-expand:focus-visible .cover-expand-hint { opacity: 1; transform: scale(1); }
 
 .cover-dialog { border: 0; padding: 0; margin: auto; max-width: 100vw; max-height: 100vh; background: transparent; overflow: visible; }
-.cover-dialog::backdrop { background: rgba(8, 20, 12, 0.88); backdrop-filter: blur(6px); }
+.cover-dialog::backdrop { background: rgba(24, 24, 24, 0.88); backdrop-filter: blur(6px); }
 .cover-dialog-inner { position: relative; display: grid; place-items: center; }
 .cover-close {
   position: absolute; top: 14px; right: 14px; z-index: 5;
   display: grid; place-items: center;
   width: 38px; height: 38px;
   border-radius: 50%;
-  background: rgba(232, 245, 235, 0.1);
+  background: rgba(255, 255, 227, 0.1);
   color: var(--on-scrim);
   transition: background-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
 }
-.cover-close:hover { background: rgba(232, 245, 235, 0.22); transform: scale(1.06); }
+.cover-close:hover { background: rgba(255, 255, 227, 0.22); transform: scale(1.06); }
 .cover-dialog .cover-tilt { width: min(80vmin, 640px); aspect-ratio: 1; perspective: 1100px; animation: coverIn var(--dur-spring) var(--ease-spring) both; }
 .cover-dialog[data-no-motion] .cover-tilt { animation: none; }
 @keyframes coverIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -614,7 +600,7 @@ img { display: block; max-width: 100%; }
   position: absolute; inset: 6px;
   border-radius: var(--radius-art);
   pointer-events: none; z-index: -1;
-  background: rgba(8, 20, 12, 0.6);
+  background: rgba(24, 24, 24, 0.6);
   filter: blur(18px);
   transform: translate3d(calc(var(--nx, 0) * 16px), calc(var(--ny, 0) * 11px), -30px);
   transition: transform 0.45s var(--ease);
@@ -880,7 +866,7 @@ img { display: block; max-width: 100%; }
 .shelf-track::-webkit-scrollbar { display: none; }
 /* Springs like the album and disco card lifts. It is the whole card that moves
    here rather than the artwork inside it, so the transition belongs on the
-   card â€” .shelf-art's own transition never covered this lift. */
+   card — .shelf-art's own transition never covered this lift. */
 .shelf-card { flex: 0 0 170px; width: 170px; scroll-snap-align: start; text-align: left; padding: 0; transition: transform var(--dur-spring) var(--ease-spring); }
 .shelf-card:hover { transform: translateY(-4px); }
 .shelf-art {
@@ -929,7 +915,7 @@ img { display: block; max-width: 100%; }
   padding-left: 2px;
   background: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 2px 10px rgba(8, 20, 12, 0.45);
+  box-shadow: 0 2px 10px rgba(24, 24, 24, 0.45);
   transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease-soft);
   opacity: 0.92;
 }
@@ -939,7 +925,7 @@ img { display: block; max-width: 100%; }
   position: absolute; right: 6px; bottom: 6px;
   padding: 1px 5px;
   border-radius: var(--radius-control);
-  background: rgba(8, 20, 12, 0.82);
+  background: rgba(24, 24, 24, 0.82);
   color: var(--on-scrim);
   font-family: var(--font-mono);
   font-weight: var(--mono-weight);
@@ -984,7 +970,7 @@ img { display: block; max-width: 100%; }
   border-radius: var(--radius-art);
   border: 1px solid var(--accent);
   overflow: hidden;
-  background: #14261a;
+  background: #2b2b2b;
 }
 .video-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .video-close {
@@ -992,13 +978,13 @@ img { display: block; max-width: 100%; }
   display: grid; place-items: center;
   width: 26px; height: 26px;
   border-radius: 50%;
-  background: rgba(8, 20, 12, 0.78);
+  background: rgba(24, 24, 24, 0.78);
   color: var(--on-scrim);
   cursor: pointer;
   z-index: 2;
   transition: background-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
 }
-.video-close:hover { background: rgba(8, 20, 12, 0.95); transform: scale(1.08); }
+.video-close:hover { background: rgba(24, 24, 24, 0.95); transform: scale(1.08); }
 .video-card.is-playing .video-name,
 .video-card.is-playing .video-meta { display: none; }
 
@@ -1055,7 +1041,7 @@ img { display: block; max-width: 100%; }
   color: var(--ink);
   box-shadow: var(--shadow-lift);
 }
-.help-dialog::backdrop { background: rgba(8, 20, 12, 0.82); backdrop-filter: blur(5px); }
+.help-dialog::backdrop { background: rgba(24, 24, 24, 0.82); backdrop-filter: blur(5px); }
 .help-inner { position: relative; padding: 26px 28px 30px; }
 .help-title { margin: 4px 0 14px; font-size: 22px; font-weight: 600; color: var(--ink-strong); }
 .help-inner .eyebrow:not(:first-of-type) { margin-top: 24px; }
@@ -1115,7 +1101,7 @@ img.art-pending.is-loaded { opacity: 1; }
 .view-enter { animation: viewIn var(--dur) var(--ease) both; }
 @keyframes viewIn { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: none; } }
 /* The spring arrives early and settles back, so this reads faster than its
-   0.62s duration suggests â€” but the stagger delay compounds across a shelf,
+   0.62s duration suggests — but the stagger delay compounds across a shelf,
    which is why it is the spring duration and not Patch's 0.8s. */
 .stagger-item { animation: itemIn var(--dur-spring) var(--ease-spring) both; animation-delay: var(--stagger-delay, 0ms); }
 @keyframes itemIn { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
@@ -1136,9 +1122,9 @@ img.art-pending.is-loaded { opacity: 1; }
   /* The vinyl keeps its affordance without the movement: it simply rests at its
      out position instead of sliding to it. It has to read --vinyl-out rather
      than a literal, or this would drag the disc back to the full slide and undo
-     the paper theme's trim. */
+     the trim. */
   .vinyl { transition: none !important; transform: translateX(var(--vinyl-out)) !important; }
-  /* The two animated full-viewport grain layers this used to disable are gone â€”
+  /* The two animated full-viewport grain layers this used to disable are gone —
      page texture is a static ruled grid now, so there is no ambient animation
      left to suppress. The shelf mask is a static cue rather than movement, so
      it stays. */
@@ -1155,7 +1141,7 @@ img.art-pending.is-loaded { opacity: 1; }
 
 @media (max-width: 1000px) {
   /* The hero's gap narrows to 24px here, and --hero-gap has to follow it, or the
-     paper theme's disc would overshoot the text column by 12px. */
+     disc would overshoot the text column by 12px. */
   :root { --hero-gap: 24px; }
   .album-hero { grid-template-columns: 210px minmax(0, 1fr); gap: 24px; }
   .album-hero > .album-art, .album-hero > .art-placeholder, .album-hero .cover-tilt, .album-hero .cover-expand, .album-hero .hero-cover { width: 210px; }
@@ -1167,11 +1153,8 @@ img.art-pending.is-loaded { opacity: 1; }
 
 @media (max-width: 720px) {
   /* The hero stacks, so the text sits below the cover and there is nothing to
-     the right of the sleeve to collide with. The disc gets its full slide back
-     in both themes. This has to be redeclared for html.light specifically:
-     media queries add no specificity, so html.light (0,1,1) would otherwise
-     still be winning over :root (0,1,0) from further up the file. */
-  :root, html.light { --vinyl-out: -45%; }
+     the right of the sleeve to collide with. The disc gets its full slide back. */
+  :root { --vinyl-out: -45%; }
   .brand-name { display: none; }
   .album-hero, .artist-hero { grid-template-columns: 1fr; }
   .album-hero > .album-art, .album-hero > .art-placeholder, .album-hero .cover-expand, .album-hero .hero-cover { width: 100%; max-width: 300px; }

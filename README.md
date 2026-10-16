@@ -55,8 +55,8 @@ matter rather than a dashboard.
 - **Catalogue numbers** are `KALM` plus the Deezer album id, derived rather
   than stored: no migration, identical for every reader, and a saved record
   keeps its number permanently
-- **Layout:** a single sticky topbar carrying brand, four navigation tabs,
-  search and the theme toggle. There is no sidebar; the 232px it occupied went
+- **Layout:** a single sticky topbar carrying brand, four navigation tabs and
+  search. There is no sidebar; the 232px it occupied went
   back to the album grid. Labels collapse to icons below 940px
 - **Corners:** radius scales with element size rather than being uniform —
   6px on the search field, toast and dialogs, 4px on controls, 3px on artwork,
@@ -64,12 +64,20 @@ matter rather than a dashboard.
   the brand tile
 - **Type:** Figtree throughout, Azeret Mono uppercase and letterspaced for every
   micro-label (counts, years, formats, durations, metadata keys)
-- **Palette:** "lush forest". Dark is deep canopy (`--bg` `#253d2c`, a near-black
-  green) with `--accent` `#8fcca0`; light is new growth (`--bg` `#cffcdc`, pale
-  mint) with `--accent` `#2e6f40`. The source palette supplied four colours and
-  this needs twelve tokens, so the intermediates are derived and then *solved*
-  for contrast rather than eyeballed — see "Accessibility" below for why
-  `--accent` is not the palette's own `#68BA7F`
+- **Palette:** "ink wash", and **there is only one theme.** Charcoal `#4a4a4a`,
+  cool grey, soft ivory `#ffffe3`, slate blue `#6d8196` (darkened 25% to `#5a6978`
+  for `--accent`)
+
+  This palette is a light-theme palette, which is a measurement rather than a
+  preference: the slate is darker than its own greys (L=0.212 against charcoal's
+  0.069), so it works as an accent on a light ground and cannot on a dark one.
+  The slate is 3.95:1 on ivory and 2.21:1 on charcoal, and no ground darker than
+  `#161616` lets it clear 4.5 at all. Forcing it into a dark theme pushed the
+  accent to `#dae5f1`, which is no longer slate. Rather than desaturate the
+  palette in both directions, the dark theme was removed along with its toggle.
+
+  The palette supplies four colours and this needs thirteen, so the rest are
+  derived and then *solved* for contrast rather than eyeballed
 - **Texture:** a faint ruled grid across the page, two `repeating-linear-gradient`
   layers, no JS and no network request, and static rather than animated
 - Hairline rules instead of glows, near-square corners, green-tinted shadows
@@ -80,7 +88,7 @@ matter rather than a dashboard.
 - Click any cover for a large centred view with 3D tilt
 - A record peeks out from behind the album sleeve on hover or keyboard focus,
   and stops at the gap so it never sits behind the title
-- Favorites and recently viewed stored locally; themes remembered between visits
+- Favorites and recently viewed stored locally
 - Responsive down to icon-only navigation, with `?` for shortcuts and a card key
 
 ## Accessibility and recovery
@@ -111,23 +119,24 @@ changed, and why:
   with the data. They were removed. The one eyebrow that carries real
   information — record type and year on the album page — was kept.
 
-Every text and background pair in both themes clears WCAG AA (4.5:1) for body
-and small text — 17 pairs per theme, verified by reading the tokens back out of
-`styles.css` rather than from a draft. Micro-label tones were measured and
-adjusted rather than chosen by eye, and `--faint` is the binding constraint in
-both themes, landing at exactly 4.50:1 against `--surface-2`.
+Every text and background pair clears WCAG AA (4.5:1) for body and small text —
+**23 pairs, one theme**, verified by reading the tokens back out of `styles.css`
+rather than from a draft. The tightest is 4.73:1 (`--accent` on `--surface-2`).
 
 Two values are deliberately *not* the source palette's own:
 
-- **`--accent` is `#8fcca0`, not `#68BA7F`.** The palette green measures 5.00:1
-  on `--bg` but **4.28:1** on `--surface`, and that is a live failure rather than
-  a theoretical one: `.result-row:hover` paints `--surface` underneath
-  accent-coloured type. The solved value clears 5.43:1 there.
-- **`--on-scrim` is a separate token.** The play button, close buttons and toast
-  draw light glyphs on near-black scrims. They cannot follow `--ink-strong`,
-  which is dark green on the light theme and would disappear against a black
-  overlay. Verified by compositing each real scrim alpha over each theme's
-  background; the worst case is 4.76:1.
+- **`--accent` is `#5a6978`, not `#6D8196`.** The palette slate is 3.37:1 on
+  `--surface-2`, and that is a live failure rather than a theoretical one:
+  `.result-row:hover` paints `--surface` underneath accent-coloured type. Darkened
+  25% it clears 4.73:1 there and keeps the blue.
+- **`--muted` is `#5c5c5c`, not `#6e6e6e`**, which measured 4.28:1 on
+  `--surface-2`. `--faint` is `#585858` rather than the previous solver's
+  `#5d5d45`, which was technically passing but khaki.
+
+**`--on-scrim` is a separate token.** The play button, close buttons and toast
+draw light glyphs on near-black scrims. They cannot follow `--ink-strong`, which
+is charcoal here and would disappear against a black overlay. Verified by
+compositing each real scrim alpha over `--bg`; the worst case is 4.94:1.
 
 ### Known limitations
 
@@ -356,20 +365,19 @@ makes the disc overshoot into the text.
 `prefers-reduced-motion: reduce` the disc rests at its out position instead of
 sliding, which is the same value the hover rule uses.
 
-There is one disc for both themes — `--disc-ring-a` / `--disc-ring-b` are
-declared on `:root` and deliberately not redeclared per theme. That is only safe
-because the disc is trimmed, and the reason is polarity: dark works because
-light type sits on a dark disc, but the light theme's album title is near-black
-(`#16281c`), so a disc reaching the text column landed at **1.01:1** and the
-title did not degrade, it vanished. No colour fixes that with a full slide —
-the light theme's `--accent` `#2e6f40` needs a disc luminance of 0.728 to stay
-readable, which is a disc invisible as a disc. Trimming means the disc sits
+There is one disc — `--disc-ring-a` / `--disc-ring-b` are declared on `:root`.
+That is only safe because the disc is trimmed, and the reason is polarity: a
+disc reads only when it is darker than the type in front of it, but this
+theme's album title is charcoal (`#4a4a4a`), so a disc reaching the text column
+landed at **1.01:1** and the title did not degrade, it vanished. No colour fixes
+that with a full slide — `--accent` `#5a6978` needs a disc luminance of 0.728 to
+stay readable, which is a disc invisible as a disc. Trimming means the disc sits
 behind no text at all, which frees the colour completely. `--vinyl-out` is
 restored to `-45%` at `max-width: 720px`, where the hero stacks and the text is
 below the cover.
 
 The disc stays a neutral grey (`#767b77` / `#868c87`) rather than joining the
-palette. A record is not green, and a green disc reads as foliage. The previous
+palette. A record is not slate, and a tinted disc reads as decoration. The previous
 warm grey was cooled rather than tinted, because it had enough brown in it to
 look like a smudge on this background.
 
