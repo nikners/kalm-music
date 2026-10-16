@@ -17,15 +17,27 @@
   --accent-ink: #191713;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
   --shadow-lift: 0 10px 26px rgba(0, 0, 0, 0.6);
-  --grain: 0.05;
-  /* Edge length of the turbulence tile below. The grain drift is capped at
-     exactly this on X, so the texture always wraps within a whole tile and the
-     seam can never slide into view. */
-  --grain-tile: 180px;
+  /* Page texture is a ruled grid rather than film grain. A catalogue of
+     records is a grid of things, and ruling reads as index; noise read as
+     paper. It is static, which also retires two animated fixed full-viewport
+     layers that were the most expensive thing in the app. */
+  --grid-size: 120px;
+  --grid-line: rgba(255, 255, 255, 0.032);
   --ease: cubic-bezier(0.22, 0.61, 0.24, 1);
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Overshoots past its target and settles back. Used for anything that
+     arrives rather than departs — lifts, reveals, the cover dialog. Not used
+     for the vinyl slide, which should stay linear-feeling and predictable. */
+  --ease-spring: cubic-bezier(0.275, 0.6, 0.16, 1.24);
   --dur: 0.32s;
   --dur-fast: 0.18s;
+  --dur-spring: 0.62s;
+  /* Letter-spacing was eight values between 0.04em and 0.14em, which read as
+     over-tracked signage rather than as labels. Three tiers now. Eyebrows stay
+     wide because at 10px anything tighter sets solid. */
+  --track-tight: 0.03em;
+  --track-mid: 0.06em;
+  --track-wide: 0.12em;
   /* Corner radius scales with element size: controls get more rounding than the
      artwork they sit next to, and the largest surfaces get the most. Kept
      deliberately small so the treatment still reads as printed matter. */
@@ -91,7 +103,7 @@ html.light {
   --accent-ink: #faf6ec;
   --shadow: 0 2px 6px rgba(74, 58, 40, 0.12);
   --shadow-lift: 0 10px 24px rgba(74, 58, 40, 0.2);
-  --grain: 0.035;
+  --grid-line: rgba(0, 0, 0, 0.045);
   /* No disc overrides here on purpose. --vinyl-out and --disc-ring-a/b are
      inherited from :root, so paper gets exactly the same disc, in exactly the
      same colour, travelling exactly as far as dark. The reason that is safe is
@@ -113,56 +125,33 @@ body {
   transition: background-color var(--dur) var(--ease-soft), color var(--dur) var(--ease-soft);
 }
 
-/* Film grain / paper fibre. One fixed pseudo-element, no JS, no request.
-   Sits above everything but never intercepts pointer events.
+/* Ruled grid, the page's only texture. One fixed pseudo-element, no JS, no
+   request, no animation. Sits above everything but never intercepts pointer
+   events.
 
-   The layer is oversized on every side (--grain-tile plus overscan) because a
-   fixed inset:0 layer would expose the tile's edge as it drifts. */
+   Two gradients rather than a background-size on one image: each line is drawn
+   as a 1px stop followed by transparent to the tile edge, so the ruling is a
+   hairline rather than a 1px line half-clipped by subpixel rounding, which is
+   what makes a grided page shimmer on scroll at fractional zoom.
+
+   inset:0 rather than the -200px overscan the grain needed. That overscan
+   existed solely to stop the drifting tile's edge entering view; nothing moves
+   now. */
 body::before {
   content: '';
   position: fixed;
-  inset: -200px;
+  inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: var(--grain);
-  background-repeat: repeat;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  /* steps() re-renders the texture once per cycle rather than sliding it, so the
-     grain shimmers in place like film instead of drifting as a cloud. X is
-     capped at one tile width; any further and the seam slides into view. */
-  animation: grainDrift 13s steps(1, end) infinite;
-}
-@keyframes grainDrift {
-  from { background-position: 0 0; }
-  to   { background-position: var(--grain-tile) 90px; }
+  background-image:
+    repeating-linear-gradient(to right, var(--grid-line) 0 1px, transparent 1px var(--grid-size)),
+    repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px var(--grid-size));
 }
 
-/* Second grain layer at a different noise frequency, rate and opacity. 13s and
-   8s share no factor, so the two never fall into step and the composite does
-   not visibly repeat. Blended rather than stacked so it adds tooth to the
-   first layer instead of simply doubling it. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: -200px;
-  z-index: 9998;
-  pointer-events: none;
-  opacity: calc(var(--grain) * 0.5);
-  mix-blend-mode: overlay;
-  background-repeat: repeat;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.91' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grainDrift2 8s steps(1, end) infinite;
-}
-@keyframes grainDrift2 {
-  from { background-position: 0 0; }
-  to   { background-position: 60px 143px;   /* 180 - 37, so the two layers
-                                              re-align at different moments */ }
-}
-
-/* Texture muddies small text on poor panels, so drop it when transparency is
+/* Ruling muddies small text on poor panels, so drop it when transparency is
    explicitly unwanted. */
 @media (prefers-reduced-transparency: reduce) {
-  body::before, body::after { display: none; }
+  body::before { display: none; }
 }
 
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }
@@ -206,7 +195,7 @@ img { display: block; max-width: 100%; }
   font-weight: var(--mono-weight);
   font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-wide);
   color: var(--faint);
 }
 
@@ -348,7 +337,7 @@ img { display: block; max-width: 100%; }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 36px 0 14px; }
 .section-heading h2 { margin: 0; font-size: 21px; font-weight: 600; color: var(--ink-strong); }
 .section-heading .eyebrow { margin-bottom: 4px; }
-.result-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.result-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-mid); text-transform: uppercase; color: var(--faint); }
 
 /* =================================================================== tabs */
 .tab-bar { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin-bottom: 6px; overflow-x: auto; }
@@ -365,7 +354,7 @@ img { display: block; max-width: 100%; }
 .tab:hover { color: var(--ink-strong); }
 .tab.active { color: var(--ink-strong); }
 .tab.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); }
-.tab-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); }
+.tab-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-tight); color: var(--faint); }
 
 /* ============================================================ result rows */
 .results-list { display: flex; flex-direction: column; }
@@ -395,7 +384,7 @@ img { display: block; max-width: 100%; }
   transition: color var(--dur-fast) var(--ease-soft);
 }
 .result-sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.result-kind { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); text-align: right; }
+.result-kind { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-mid); text-transform: uppercase; color: var(--faint); text-align: right; }
 .result-meta { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 .result-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-art); background: var(--surface-2); box-shadow: var(--shadow); }
@@ -415,7 +404,7 @@ img { display: block; max-width: 100%; }
   transition: background-color var(--dur-fast) var(--ease-soft), border-color var(--dur-fast) var(--ease-soft);
 }
 .artist-banner:hover { background: var(--surface-2); border-color: var(--accent); }
-.artist-banner-label { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); }
+.artist-banner-label { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10px; text-transform: uppercase; letter-spacing: var(--track-wide); color: var(--faint); }
 .artist-banner-name { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink-strong); margin-top: 4px; }
 
 /* ============================================================== card grids */
@@ -435,7 +424,7 @@ img { display: block; max-width: 100%; }
   border: 1px solid var(--line);
   background: var(--surface-2);
   box-shadow: var(--shadow);
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+  transition: transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
 }
 .album-card:hover .album-art { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
 .album-meta { padding-top: 10px; min-width: 0; }
@@ -550,7 +539,7 @@ img { display: block; max-width: 100%; }
   transition: background-color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease);
 }
 .cover-close:hover { background: rgba(246, 239, 225, 0.22); transform: scale(1.06); }
-.cover-dialog .cover-tilt { width: min(80vmin, 640px); aspect-ratio: 1; perspective: 1100px; animation: coverIn 0.34s var(--ease) both; }
+.cover-dialog .cover-tilt { width: min(80vmin, 640px); aspect-ratio: 1; perspective: 1100px; animation: coverIn var(--dur-spring) var(--ease-spring) both; }
 .cover-dialog[data-no-motion] .cover-tilt { animation: none; }
 @keyframes coverIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
@@ -662,7 +651,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-mono);
   font-weight: var(--mono-weight);
   font-size: 10.5px;
-  letter-spacing: 0.11em;
+  letter-spacing: var(--track-mid);
   text-transform: uppercase;
   color: var(--faint);
   padding-top: 11px;
@@ -680,7 +669,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-mono);
   font-weight: var(--mono-weight);
   font-size: 10.5px;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-tight);
 }
 
 .album-actions { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -716,7 +705,7 @@ img { display: block; max-width: 100%; }
 .track-credit { color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .credits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
-.credit-group h3 { margin: 0 0 8px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.13em; color: var(--faint); }
+.credit-group h3 { margin: 0 0 8px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; text-transform: uppercase; letter-spacing: var(--track-wide); color: var(--faint); }
 .credit-group p { margin: 0 0 5px; font-size: 13.5px; color: var(--ink-strong); }
 
 .related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
@@ -725,11 +714,11 @@ img { display: block; max-width: 100%; }
   width: 100%; aspect-ratio: 1; object-fit: cover;
   border-radius: var(--radius-art); border: 1px solid var(--line);
   background: var(--surface-2); box-shadow: var(--shadow);
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+  transition: transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
 }
 .related-card:hover .related-photo { transform: scale(1.04); box-shadow: var(--shadow-lift); border-color: var(--accent); }
 .related-name { display: block; margin-top: 10px; font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--ink-strong); }
-.related-sub { display: block; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); }
+.related-sub { display: block; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-tight); color: var(--faint); }
 
 /* Artist discography as a printed catalogue. */
 .disco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 26px 20px; }
@@ -738,12 +727,12 @@ img { display: block; max-width: 100%; }
   width: 100%; aspect-ratio: 1; object-fit: cover;
   border-radius: var(--radius-art); border: 1px solid var(--line);
   background: var(--surface-2); box-shadow: var(--shadow);
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
+  transition: transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
 }
 .disco-card:hover .disco-art { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
 .disco-title-line { display: flex; align-items: center; gap: 6px; margin-top: 11px; }
 .disco-name { font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.disco-meta { display: block; margin-top: 3px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disco-meta { display: block; margin-top: 3px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-tight); text-transform: uppercase; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ========================================================= discover rows */
 .shelf { margin: 36px 0 8px; }
@@ -779,7 +768,10 @@ img { display: block; max-width: 100%; }
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
 }
 .shelf-track::-webkit-scrollbar { display: none; }
-.shelf-card { flex: 0 0 170px; width: 170px; scroll-snap-align: start; text-align: left; padding: 0; transition: transform var(--dur) var(--ease); }
+/* Springs like the album and disco card lifts. It is the whole card that moves
+   here rather than the artwork inside it, so the transition belongs on the
+   card — .shelf-art's own transition never covered this lift. */
+.shelf-card { flex: 0 0 170px; width: 170px; scroll-snap-align: start; text-align: left; padding: 0; transition: transform var(--dur-spring) var(--ease-spring); }
 .shelf-card:hover { transform: translateY(-4px); }
 .shelf-art {
   width: 100%; aspect-ratio: 1; object-fit: cover;
@@ -791,7 +783,7 @@ img { display: block; max-width: 100%; }
 .shelf-card.round .shelf-art { border-radius: 50%; }
 .shelf-title-line { display: flex; align-items: center; gap: 6px; margin-top: 11px; }
 .shelf-name { font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.shelf-sub { display: block; margin-top: 3px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shelf-sub { display: block; margin-top: 3px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-tight); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shelf-skeleton { height: 170px; border-radius: var(--radius-art); background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%); background-size: 300% 100%; animation: shimmer 1.4s linear infinite; }
 @keyframes shimmer { from { background-position: 150% 0; } to { background-position: -150% 0; } }
 
@@ -842,7 +834,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-mono);
   font-weight: var(--mono-weight);
   font-size: 10.5px;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-tight);
   font-variant-numeric: tabular-nums;
 }
 
@@ -866,7 +858,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-mono);
   font-weight: var(--mono-weight);
   font-size: 10.5px;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-tight);
   color: var(--faint);
   white-space: nowrap;
   overflow: hidden;
@@ -932,7 +924,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: var(--mono-weight);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-mid);
   text-transform: uppercase;
   transition: background-color var(--dur-fast) var(--ease-soft), color var(--dur-fast) var(--ease-soft);
 }
@@ -980,7 +972,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-mono);
   font-weight: var(--mono-weight);
   font-size: 10.5px;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-mid);
 }
 
 /* ================================================================== misc */
@@ -1004,7 +996,7 @@ img { display: block; max-width: 100%; }
    immediately before it binds the load handler. A render path that forgets the
    call gets an instant-loading image rather than an invisible one. */
 img.album-art, img.result-thumb, img.artist-photo, img.disco-art, img.shelf-art, img.related-photo, img.video-thumb {
-  transition: opacity 0.45s var(--ease-soft), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft);
+  transition: opacity 0.45s var(--ease-soft), transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft);
 }
 img.art-pending { opacity: 0; }
 img.art-pending.is-loaded { opacity: 1; }
@@ -1012,7 +1004,10 @@ img.art-pending.is-loaded { opacity: 1; }
 /* ================================================================= motion */
 .view-enter { animation: viewIn var(--dur) var(--ease) both; }
 @keyframes viewIn { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: none; } }
-.stagger-item { animation: itemIn 0.42s var(--ease) both; animation-delay: var(--stagger-delay, 0ms); }
+/* The spring arrives early and settles back, so this reads faster than its
+   0.62s duration suggests — but the stagger delay compounds across a shelf,
+   which is why it is the spring duration and not Patch's 0.8s. */
+.stagger-item { animation: itemIn var(--dur-spring) var(--ease-spring) both; animation-delay: var(--stagger-delay, 0ms); }
 @keyframes itemIn { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1033,11 +1028,10 @@ img.art-pending.is-loaded { opacity: 1; }
      than a literal, or this would drag the disc back to the full slide and undo
      the paper theme's trim. */
   .vinyl { transition: none !important; transform: translateX(var(--vinyl-out)) !important; }
-  /* Stated explicitly rather than left to the global duration override above:
-     two permanently animated full-viewport layers are the most expensive thing
-     in the app, and a reader who asked for less motion should not pay for them.
-     The shelf mask is a static cue rather than movement, so it stays. */
-  body::before, body::after { animation: none !important; }
+  /* The two animated full-viewport grain layers this used to disable are gone —
+     page texture is a static ruled grid now, so there is no ambient animation
+     left to suppress. The shelf mask is a static cue rather than movement, so
+     it stays. */
 }
 
 /* =============================================================== responsive */

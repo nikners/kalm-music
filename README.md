@@ -58,8 +58,8 @@ matter rather than a dashboard.
 - **Palette:** dark is a matte board sleeve (warm near-black, cream type, amber
   accent); light is aged liner paper (cream ground, brown-black ink, oxblood
   accent)
-- **Texture:** a fine film-grain overlay across the page via an inline SVG
-  turbulence filter, no JS and no network request
+- **Texture:** a faint ruled grid across the page, two `repeating-linear-gradient`
+  layers, no JS and no network request, and static rather than animated
 - Hairline rules instead of glows, near-square corners, warm-tinted shadows
 - Tabbed search results: **Top results** interleaves artists, tracks and albums,
   with separate **Artists**, **Tracks** and **Albums** tabs and live counts
@@ -255,11 +255,28 @@ forced the labels to 700, which read blunt at 10.5px, and cost 32.5 KB for two
 weights. Azeret Mono has a real 500, so the token is back to the weight the
 labels originally asked for, and only one weight is requested at all.
 
-Weighted rather than bouncy: ease-out curves around 320ms, restricted to
-`transform` and `opacity`. Views fade in on navigation, grids and result rows
-stagger with a capped delay, artwork fades in once decoded, and cards lift on
-hover. All of it is disabled under `prefers-reduced-motion: reduce`, and the
-grain overlay is removed under `prefers-reduced-transparency: reduce`.
+Weighted rather than bouncy — with one exception. Ease-out curves around 320ms,
+restricted to `transform` and `opacity`. Views fade in on navigation, grids and
+result rows stagger with a capped delay, artwork fades in once decoded, and cards
+lift on hover. All of it is disabled under `prefers-reduced-motion: reduce`, and
+the grid overlay is removed under `prefers-reduced-transparency: reduce`.
+
+The exception is `--ease-spring`, `cubic-bezier(0.275, 0.6, 0.16, 1.24)`, which
+overshoots its target and settles back. It is applied only to things that
+**arrive** rather than depart — the three card lifts, the cover dialog, and the
+staggered reveal — and never to the vinyl slide, which should stay predictable.
+620ms rather than the reference site's 800ms: a spring arrives early so it reads
+faster than its duration suggests, but Kalm staggers many items per shelf and the
+delays compound. Note that `.shelf-card` carries the spring on the *card* while
+the other two carry it on the artwork — on a shelf it is the whole card that
+lifts, so a transition on `.shelf-art` would never have covered it.
+
+Page texture is a ruled grid rather than film grain, which retires two animated
+fixed full-viewport layers that were previously the most expensive thing in the
+app. It is also a better metaphor: a catalogue of records is a grid of things.
+The grid is drawn as two gradients rather than one image at `background-size`,
+because a 1px image line lands on a fractional device pixel and shimmers on
+scroll at fractional zoom.
 
 Artwork fades in via an opt-in `.art-pending` class applied per image by
 `revealArt()`. Hiding lives behind that class rather than a global rule, so a
