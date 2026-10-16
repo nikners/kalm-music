@@ -31,13 +31,15 @@
         <span class="brand-mark">K</span><span class="brand-name">kalm</span>
       </button>
 
-      <!-- Three peer destinations, so they read as peer tabs. Replaces the
+      <!-- Four peer destinations, so they read as peer tabs. Replaces the
            232px sidebar, which spent permanent width on three buttons and cost
-           the album grid a column of artwork. -->
+           the album grid a column of artwork. Index leads: the catalogue is
+           the front door, Browse (the old Discover carousels) is one tab in. -->
       <nav class="nav-tabs" id="navTabs" aria-label="Primary">
-        <button class="nav-tab" data-view="discover" aria-current="true"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Discover</span></button>
+        <button class="nav-tab" data-view="index" aria-current="true"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">Index</span></button>
+        <button class="nav-tab" data-view="discover"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Browse</span></button>
         <button class="nav-tab" data-view="favorites"><span class="nav-icon" aria-hidden="true">♡</span><span class="nav-label">Favorites</span></button>
-        <button class="nav-tab" data-view="recent"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-label">Recently viewed</span></button>
+        <button class="nav-tab" data-view="recent"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-label">Recent</span></button>
       </nav>
 
       <div class="topbar-search">
@@ -54,7 +56,8 @@
     </header>
 
     <main class="main-content">
-        <section id="discoverView" class="view active-view">
+        <section id="indexView" class="view active-view"><div class="page" id="indexPage"></div></section>
+  <section id="discoverView" class="view">
           <div class="page">
             <div class="page-heading">
               <h1>Discover</h1>

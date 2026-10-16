@@ -33,7 +33,7 @@ API. Without it, public Piped instances are used instead — see
 | --- | --- |
 | `GET /health` | Liveness check, returns `{"ok":true,"service":"kalm"}` |
 | `GET /api/search?q=` | Artists, tracks and albums, plus an interleaved top list |
-| `GET /api/discover` | Carousel rows for the Discover page |
+| `GET /api/discover` | Carousel rows for the Browse page |
 | `GET /api/artist?id=` | Artist summary and discography |
 | `GET /api/album?id=` | Album detail, tracklist, credits and related artists |
 | `GET /api/videos?artist=&title=` | Up to four YouTube videos for a release |
@@ -46,7 +46,16 @@ server's HTML error page. Anything else falls through to the static handler.
 An album-art-first catalog with a vintage analogue feel — typed like printed
 matter rather than a dashboard.
 
-- **Layout:** a single sticky topbar carrying brand, three navigation tabs,
+- **The Index is the front door.** A feed asks you to scroll; a catalogue lets
+  you look something up. Index is a finite, text-first list ordered by title,
+  each row a catalogue number, a 44px thumbnail, title, artist, year and format.
+  It is seeded from the discover payload plus every album this browser has saved
+  or opened, so it grows with use and needs no server support. `Browse` is the
+  old Discover page — carousels and all — one tab in
+- **Catalogue numbers** are `KALM` plus the Deezer album id, derived rather
+  than stored: no migration, identical for every reader, and a saved record
+  keeps its number permanently
+- **Layout:** a single sticky topbar carrying brand, four navigation tabs,
   search and the theme toggle. There is no sidebar; the 232px it occupied went
   back to the album grid. Labels collapse to icons below 940px
 - **Corners:** radius scales with element size rather than being uniform —
@@ -185,7 +194,7 @@ load. Deezer's CDN is reliable and its metadata is richer.
 
 ### Ambient shelf drift
 
-The Discover carousels creep along on their own so the page does not read as a
+The Browse carousels creep along on their own so the page does not read as a
 still image. One `requestAnimationFrame` loop drives every shelf, at 18 px/s for
 albums and 22 px/s for tracks so the two long rows never move in lockstep. Each
 shelf ping-pongs, so there is no terminal state to get stuck at.

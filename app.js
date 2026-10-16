@@ -27,10 +27,13 @@ function migrateLegacyStorage(){
 }
 
 const state = {
-  view: 'discover',
+  view: 'index',
   tab: 'top',
   favorites: new Set(),
   recent: [],
+  // Kept so the Index can seed itself without a second round trip. loadShelves
+  // is the only writer; renderIndex reads it.
+  discoverRows: null,
   search: { artists: [], tracks: [], albums: [], top: [] }
 };
 
@@ -91,7 +94,7 @@ function revealArt(root){
 
 /* -------------------------------------------------------------- navigation */
 function navGroupFor(view){
-  if (view === 'results' || view === 'album' || view === 'artist') return 'discover';
+  if (view === 'results' || view === 'album' || view === 'artist') return 'index';
   if (view === 'collection') return state.collectionType || 'favorites';
   return view;
 }
@@ -122,9 +125,10 @@ function show(view){
     section.classList.add('view-enter');
   }
   syncNavTabs(view);
+  if (view === 'index') renderIndex();
   if (view === 'discover') renderDiscover();
-  // The drift only ever runs on Discover, and renderDiscover restarts it, so
-  // leaving the view should stop the timer outright rather than leave it
+  // The drift only ever runs on Browse, and renderDiscover restarts it, so
+  // leaving that view should stop the timer outright rather than leave it
   // idling against a hidden host.
   else if (view === 'collection') stopShelfDrift();
 }
@@ -284,6 +288,133 @@ function cardsFor(albums){
 }
 
 /* --------------------------------------------------------------- discover */
+/* -------------------------------------------------------- the catalogue index
+
+   The front door. A feed asks you to scroll; a catalogue lets you look
+   something up, so this is a finite, ordered, text-first list rather than
+   carousels of square covers.
+
+   Its contents are the discover pool plus every album this browser has saved
+   or opened, resolved out of albumCache. favorites and recent are stored as
+   bare id lists, so the cache is the only place a full payload can come from.
+   That means the index grows as it is used and needs no server support. */
+
+function catalogueNo(id){
+  return 'KALM' + id;
+}
+
+function indexRow(album){
+  const artist = album.artist || '';
+  // A dash in every cell reads as a broken table. These fields are genuinely
+  // absent for rows seeded from the chart — the discover payload hardcodes
+  // year and record_type to empty, because the album object inside a Deezer
+  // chart track carries neither. Leaving the cell empty says "not known yet",
+  // which is true and matches the page's own promise that the catalogue fills
+  // as you browse. Both fields fill in for good once the album is cached.
+  const format = [album.record_type || album.type, album.nb_tracks
+    ? album.nb_tracks + ' track' + (album.nb_tracks === 1 ? '' : 's') : '']
+    .filter(Boolean).join(' · ');
+  const saved = state.favorites.has(String(album.id));
+  return `<div class="index-row${saved ? ' is-saved' : ''}" data-album="${escapeHtml(album.id)}">
+      <span class="index-no">${escapeHtml(catalogueNo(album.id))}</span>
+      <span class="index-thumb">${artHtml(album.image, album.title, 'index-art')}</span>
+      <span class="index-title">${escapeHtml(album.title)}</span>
+      ${artist ? `<button class="index-artist" data-artist="${escapeHtml(album.artist_id || '')}" data-artist-name="${escapeHtml(artist)}">${escapeHtml(artist)}</button>` : ''}
+      <span class="index-year">${escapeHtml(album.year || '')}</span>
+      <span class="index-format">${escapeHtml(format)}</span>
+    </div>`;
+}
+
+// Index rows are keyboard reachable: the row itself opens the album and the
+// artist name inside it is a real button, so a row costs two tab stops rather
+// than nesting a button inside a button.
+function wireIndex(host){
+  host.querySelectorAll('.index-row').forEach(row => {
+    row.tabIndex = 0;
+    row.setAttribute('role', 'link');
+    const open = () => openAlbum(row.dataset.album);
+    row.addEventListener('click', e => {
+      if (e.target.closest('.index-artist')) return;
+      open();
+    });
+    row.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  });
+  host.querySelectorAll('.index-artist[data-artist]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openArtist(btn.dataset.artist, btn.dataset.artistName);
+    });
+  });
+}
+
+function renderIndex(){
+  const host = $('#indexPage');
+  const byId = new Map();
+
+  // The discover pool is the seed; whatever else is known gets layered on top.
+  const rows = state.discoverRows || [];
+  rows.filter(r => r.kind === 'album').forEach(row => {
+    (row.items || []).forEach(item => byId.set(String(item.id), item));
+  });
+
+  // favorites and recent are id lists, so the cache is the only source of detail.
+  const known = [...state.favorites, ...state.recent].map(String);
+  known.forEach(id => {
+    const album = cachedAlbum(id);
+    if (album) byId.set(id, album);
+  });
+
+  // Nothing cached yet on a cold first visit, and the shelves have not been
+  // fetched because the visitor never opened Browse. Pull the same payload
+  // rather than showing an empty catalogue; loadShelves writes it back and
+  // calls renderIndex again.
+  if (!state.discoverRows && !known.length){
+    host.innerHTML = '<div class="empty">Loading the catalogue…</div>';
+    fetch('/api/discover')
+      .then(r => r.json())
+      .then(data => {
+        if (state.view !== 'index') return;
+        state.discoverRows = data.rows || [];
+        renderIndex();
+      })
+      .catch(() => {
+        host.innerHTML = '<div class="empty">The catalogue could not be loaded.</div>';
+      });
+    return;
+  }
+
+  const albums = [...byId.values()].sort((a, b) =>
+    (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+
+  if (!albums.length){
+    host.innerHTML = `<div class="page-heading"><h1>Index</h1></div>
+      <p class="muted">The catalogue fills as you browse. Open an album, or save
+      one, and it takes its place here.</p>`;
+    return;
+  }
+
+  host.innerHTML = `<div class="page-heading">
+      <h1>Index</h1>
+      <p class="muted">${albums.length} release${albums.length === 1 ? '' : 's'} catalogued,
+        ordered by title. Numbers are derived from the release id, so a record
+        keeps its number for good.</p>
+    </div>
+    <div class="index-head" aria-hidden="true">
+      <span class="index-no">No.</span>
+      <span class="index-title">Title</span>
+      <span class="index-artist">Artist</span>
+      <span class="index-year">Year</span>
+      <span class="index-format">Format</span>
+    </div>
+    <div class="index-list">${albums.map(indexRow).join('')}</div>`;
+
+  wireIndex(host);
+  stagger(host.querySelector('.index-list'));
+  revealArt(host);
+}
+
 function renderDiscover(){
   const grid = $('#recentAlbums');
   const ids = state.recent.map(String);
@@ -538,7 +669,10 @@ async function loadShelves(){
   try {
     const response = await fetch('/api/discover');
     const data = await response.json();
-    renderShelves(data.rows || []);
+    // Retained for the Index, which seeds itself from the same payload.
+    state.discoverRows = data.rows || [];
+    renderShelves(state.discoverRows);
+    if (state.view === 'index') renderIndex();
   } catch (error) {
     host.innerHTML = '';
   }
@@ -1240,7 +1374,7 @@ $('#searchInput').addEventListener('keydown', e => {
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
-    show('discover');
+    show('index');
     const input = $('#searchInput');
     input.focus();
     input.select();
@@ -1256,7 +1390,7 @@ document.addEventListener('keydown', e => {
 
 $$('.nav-tab').forEach(b => b.onclick = () => {
   beginNav();
-  if (b.dataset.view === 'discover') show('discover');
+  if (b.dataset.view === 'discover' || b.dataset.view === 'index') show(b.dataset.view);
   else renderCollection(b.dataset.view);
 });
 
@@ -1268,7 +1402,7 @@ $('#themeToggle').onclick = () => {
 
 $('#brandHome').onclick = () => {
   beginNav();
-  show('discover');
+  show('index');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
