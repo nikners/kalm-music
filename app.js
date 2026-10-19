@@ -887,10 +887,15 @@ function typeTitle(el){
   if (reducedMotion.matches) return;
 
   const chars = Array.from(full);
-  // Cap the whole run at ~900ms. A flat 45ms makes a 29-character title take
-  // 1.3s, which reads as slow rather than deliberate.
-  const step = Math.min(45, Math.round(900 / Math.max(chars.length, 1)));
+  // Slower than the first pass, which typed 11 characters in 495ms starting at
+  // t=0 - i.e. entirely underneath the 320ms viewIn fade, so it was never
+  // actually seen. The run is capped near 2s and held back until the page has
+  // finished settling.
+  const step = Math.min(75, Math.round(2000 / Math.max(chars.length, 1)));
   el.style.setProperty('--type-step', step + 'ms');
+  // The caret needs to know how many characters there are so it can stop
+  // blinking exactly as the last one lands, rather than for ever.
+  el.style.setProperty('--type-count', String(chars.length));
   el.innerHTML = chars.map((c, i) =>
     `<span class="tchar" style="--i:${i}">${escapeHtml(c)}</span>`).join('')
     + '<span class="type-caret" aria-hidden="true"></span>';

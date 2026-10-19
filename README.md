@@ -58,12 +58,19 @@ matter rather than a dashboard.
 - **Layout:** a single sticky topbar carrying brand, four navigation tabs and
   search. There is no sidebar; the 232px it occupied went
   back to the album grid. Labels collapse to icons below 940px
-- **Corners:** radius scales with element size rather than being uniform —
-  6px on the search field, toast and dialogs, 4px on controls, 3px on artwork,
-  and circles left as circles on the shelf arrows, close buttons, play button and
-  the brand tile
-- **Type:** Figtree throughout, Azeret Mono uppercase and letterspaced for every
-  micro-label (counts, years, formats, durations, metadata keys)
+- **Corners:** retro shape — controls are pills (`--radius-control: 999px`) and
+  album artwork is square (`--radius-art: 0`), because 70s sleeves were square
+  and the controls around them were not. Circles stay circles: a circular arrow
+  or close button is one in every decade
+- **Edges:** 2px borders on every framed element — artwork, controls, inputs,
+  dialogs, toast. The 1px `border-bottom` rules that separate list rows are left
+  alone; 2px dividers between every index row would be heavy rather than retro
+- **Shadows:** hard and unblurred, which is the single strongest retro signal and
+  costs nothing in layout — `--shadow: 3px 3px 0` and `--shadow-lift: 6px 6px 0`
+  in the accent, against the previous `0 2px 8px rgba(…, 0.12)`
+- **Type:** **Righteous** for display, **Figtree** for body, **Azeret Mono**
+  uppercase and letterspaced for every micro-label (counts, years, formats,
+  durations, metadata keys)
 - **Palette:** "retro sunset", and **there is only one theme.** Burnt orange, mustard
   `#ffce1b`, teal `#069494`, dark rust — over a warm cream ground `#f7f2e4`, with
   dark rust (darkened to `#a1390c`) as `--accent`
@@ -79,9 +86,10 @@ matter rather than a dashboard.
 
   The palette supplies four colours and this needs fifteen, so the rest are
   derived and then *solved* for contrast rather than eyeballed
-- **Texture:** a faint ruled grid across the page, two `repeating-linear-gradient`
-  layers, no JS and no network request, and static rather than animated
-- Hairline rules instead of glows, near-square corners, warm-tinted shadows
+- **Texture:** halftone dots across the page — one `radial-gradient` on a 26px
+  tile, no JS and no network request, static rather than animated. Printed 70s
+  material was screened, not ruled, so this replaced the ruled grid
+- Hairline rules instead of glows, hard offset shadows, warm-tinted cream
 - Tabbed search results: **Top results** interleaves artists, tracks and albums,
   with separate **Artists**, **Tracks** and **Albums** tabs and live counts
 - Artist pages with photo and discography; album pages with cover, a printed
@@ -255,15 +263,28 @@ backgrounded tab does not resume with a large jump.
 
 ### Typography weight
 
-Two faces, two jobs: **Figtree** for everything, **Azeret Mono** for the small
-uppercase labels (counts, durations, years, format tags, metadata keys).
+Three faces, three jobs: **Righteous** for titles, **Figtree** for body, **Azeret
+Mono** for the small uppercase labels (counts, durations, years, format tags,
+metadata keys).
 
-`--font-display` and `--font-body` both resolve to Figtree. That was not the
-starting point: titles were Fraunces and body was Spectral, and moving to a
-grotesque throughout was the change that decides whether Kalm reads as an
-archival record sleeve or as a tool. Both references it was built against use a
-grotesque throughout, and the specimens were measured rather than eyeballed —
-Figtree wraps at 0.94x of Fraunces on the long-title case, so nothing reflowed.
+Righteous is the retro display face, and the reason it was chosen over the other
+candidates is a measurement rather than taste: it is **1.01x** the width of the
+Figtree it replaced, on both the 42px hero case and the 15px card case, so
+nothing re-wraps. Alfa Slab One, Archivo Black and Bungee — the other retro
+options — measure 1.19x to 1.29x and would have pushed cards and long album
+titles onto extra lines.
+
+**`--display-weight` exists because Righteous ships at a single weight, 400**,
+like every wood-type face of the period. Thirteen rules asked for 600, which
+would have been rendered as synthesised faux bold. The token is 400, and Figtree
+stays in the stack as a fallback so a failed load lands on a real 600 rather than
+a fake one. Note the effect: headings are now chunkier but *lighter* than before,
+which inverts the usual retro expectation.
+
+`--font-display` and `--font-body` both resolved to Figtree until now. That was
+itself the outcome of moving from Fraunces and Spectral to a single grotesque,
+measured rather than eyeballed — Figtree wraps at 0.94x of Fraunces on the
+long-title case, so nothing reflowed.
 
 The saving is the reason it was worth doing. Latin subset, measured from the
 Google Fonts CSS:
@@ -311,12 +332,13 @@ delays compound. Note that `.shelf-card` carries the spring on the *card* while
 the other two carry it on the artwork — on a shelf it is the whole card that
 lifts, so a transition on `.shelf-art` would never have covered it.
 
-Page texture is a ruled grid rather than film grain, which retires two animated
-fixed full-viewport layers that were previously the most expensive thing in the
-app. It is also a better metaphor: a catalogue of records is a grid of things.
-The grid is drawn as two gradients rather than one image at `background-size`,
-because a 1px image line lands on a fractional device pixel and shimmers on
-scroll at fractional zoom.
+Page texture is a halftone dot grid rather than film grain, which retires two
+animated fixed full-viewport layers that were previously the most expensive thing
+in the app. Dots also replace the ruled grid that came after it: printed 70s
+material was screened, not ruled. It is the safer of the two textures as well —
+the layer is `position: fixed`, so it does not scroll with content and a dot
+landing on a fractional device pixel cannot shimmer the way a 1px gradient line
+can.
 
 Artwork fades in via an opt-in `.art-pending` class applied per image by
 `revealArt()`. Hiding lives behind that class rather than a global rule, so a
@@ -357,11 +379,23 @@ box is individually breakable. Using inline-block to animate characters is the
 obvious move and it shreds long album titles mid-word. Transforms do not apply to
 non-replaced inline elements either, so the motion is opacity-only regardless.
 
-Two smaller decisions: the run is capped at roughly 900ms (`min(45ms, 900/len)`)
-because a flat 45ms makes a 29-character title take 1.3s, and the split uses
-`Array.from` rather than `split('')` so an accented character is not cut in half.
-The `aria-label` on the `<h1>` carries the full title, so assistive tech reads the
-whole name regardless of how far the animation has got.
+**`--type-delay: 450ms` holds the whole run back until the page has settled.**
+The first version typed from `t=0`, which put all 495ms of it underneath the
+320ms `viewIn` fade, so it was never actually seen. The run is now
+`min(75ms, 2000/len)`: "In Rainbows" starts at 450ms, finishes at 1.275s, and a
+40-character title caps at about 2.45s.
+
+The caret blinks only while typing and goes away as the last character lands,
+via two `animation-delay` values that straddle the run. Getting that wrong is
+easy — an earlier version put both delays at the end, so the caret appeared and
+vanished in the same instant and never blinked at all.
+
+Two smaller decisions: the split uses `Array.from` rather than `split('')` so an
+accented character is not cut in half, and the `aria-label` on the `<h1>` carries
+the full title so assistive tech reads the whole name regardless of how far the
+animation has got. The characters are also **not** hidden by a base
+`opacity: 0` — the 0 comes from the keyframe's `from` with `both` fill modes, so
+if the animation never runs the title is simply present rather than invisible.
 
 ### The vinyl disc
 
