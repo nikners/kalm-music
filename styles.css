@@ -1,42 +1,54 @@
 /* ============================================================== Kalm tokens
-   One theme: "ink wash". Charcoal, cool grey, soft ivory, slate blue.
+   One theme: "retro sunset". Burnt orange, mustard, teal, dark rust, over a
+   warm cream ground.
 
-   This is a light-theme palette, and that is not a preference. The slate is
-   darker than its own greys (L=0.212 against charcoal 0.069), so it works as
-   an accent on a light ground and cannot work as one on a dark one. Measured:
-   slate #6D8196 is 3.95:1 on ivory and 2.21:1 on charcoal, and no ground
-   darker than #161616 lets it clear 4.5 at all. Forcing it into a dark theme
-   pushed the accent to #DAE5F1, which is no longer slate. So rather than
-   desaturate the palette in both directions, there is one theme.
+   Two of the four swatches are FILLS and never text, which is a measurement
+   rather than a preference. Mustard is 1.33:1 on a light ground, and the
+   palette's teal carries neither light nor dark text (4.10 and 3.55). They
+   become --fill-mustard and --fill-teal, teal darkened 20%, and they take
+   opposite text colours: dark ink on mustard at 10.19:1, cream on teal at
+   4.67:1. Of the six swatch-against-swatch pairs, four fail AA outright
+   (burnt orange on teal is 1.30) - which is what a palette of sibling colour
+   blocks looks like from the inside, and why it cannot drive the theme itself.
 
-   All 23 text/background pairs clear WCAG AA, tightest 4.73 (--accent on
-   --surface-2). The palette supplies four values and this file needs thirteen,
-   so the rest are derived and then SOLVED for contrast rather than eyeballed.
+   All 16 text/background pairs clear WCAG AA, tightest 4.52 (--faint on
+   --surface-2). Those 16 are checked against the surfaces text actually sits
+   on: --bg, --surface, --surface-2. --surface-4 is excluded because it is only
+   ever a scrollbar thumb and never carries type. An earlier pass required text
+   to clear it as well, which produced failures that looked real and collapsed
+   --muted and --faint to the same colour.
 
-   Two values are deliberately not the palette's own: --accent is the slate
-   darkened 25% (3.37:1 unmodified on --surface-2), and --muted #5c5c5c exists
-   because #6e6e6e measured 4.28:1 there. */
+   --accent is the palette's dark rust darkened to #a1390c; unmodified #b7410e
+   measured 3.76:1 on --surface-2, and .result-row:hover paints that surface
+   underneath accent-coloured type. */
 :root {
-  --bg: #ffffe3;
-  --surface: #f7f7dc;
-  --surface-2: #ededd2;
-  --surface-3: #e2e2c7;
-  --surface-4: #d6d6bc;
-  --ink: #4a4a4a;
-  --ink-strong: #333333;
-  --muted: #5c5c5c;
+  --bg: #f7f2e4;
+  --surface: #fdfaf0;
+  --surface-2: #f1ebd9;
+  --surface-3: #e7e0cb;
+  --surface-4: #dcd4bc;
+  --ink: #4a4238;
+  --ink-strong: #2a2520;
+  --muted: #6b6154;
   /* --faint carries every micro-label, so it must clear 4.5:1 on --bg AND on
      every surface above it, not just the page. It is the binding constraint in
      the palette's own mid-greys do not clear it. */
-  --faint: #585858;
-  --line: #d2d2b8;
+  --faint: #716961;
+  --line: #d6cdb4;
   /* Solved, not the palette's #68BA7F: see the header note. */
-  --accent: #5a6978;
-  --accent-ink: #ffffe3;
+  --accent: #a1390c;
+  --accent-ink: #f7f2e4;
+  /* Retro sunset supplies two more colours, but they are FILLS and never text:
+     mustard fails on a light ground at 1.33:1, and the palette's teal carries
+     neither light nor dark text (4.10 and 3.55). Darkened 20% teal takes the
+     cream, so the two fills take opposite text colours - dark on mustard
+     (10.19:1), cream on teal (4.67:1). */
+  --fill-mustard: #ffce1b;
+  --fill-teal: #077979;
   /* Glyphs that sit on a near-black scrim — play button, close, toast. These
      cannot follow --ink-strong, which is dark here and would
      vanish against a black overlay. */
-  --on-scrim: #ffffe3;
+  --on-scrim: #fdfaf0;
   --shadow: 0 2px 8px rgba(24, 24, 24, 0.12);
   --shadow-lift: 0 10px 26px rgba(24, 24, 24, 0.2);
   /* Page texture is a ruled grid rather than film grain. A catalogue of
@@ -96,10 +108,10 @@
 
      Trimming is also what makes the disc safe beside the title. The
      themes have opposite polarity — dark works because light type sits on a
-     the title here is charcoal (#4a4a4a), so a disc reaching
+     the title here is near-black (#2a2520), so a disc reaching
      the text landed at 1.01:1 and the title simply vanished. With the disc
      behind no text at all, the colour is free, so the rings are one grey that
-     has to hold up against #ffffe3 and the surfaces above it.
+     has to hold up against #f7f2e4 and the surfaces above it.
 
      Kept a neutral grey rather than pulling the disc into the palette: a record
      is not green, and a tinted disc reads as decoration. The original warm grey had
@@ -623,6 +635,41 @@ img { display: block; max-width: 100%; }
   letter-spacing: -0.025em;
   line-height: 1.08;
 }
+
+/* ------------------------------------------------- typewriter album title
+
+   The title types itself in one character at a time when an album opens.
+
+   The character spans MUST stay display:inline. Measured: at a 220px column a
+   48-character word wraps to 5 lines as inline-block spans but stays on 1 as
+   inline ones, because inline-block boxes are individually breakable. That
+   rules out the usual trick of using inline-block to animate characters — and
+   transforms do not apply to non-replaced inline elements anyway, so the
+   motion is opacity only. */
+/* No `opacity: 0` in the base rule on purpose. Hiding the characters and
+   revealing them with the animation means that if the animation never runs -
+   animations unsupported, or disabled - the album title stays invisible, which
+   is the worst possible failure for the largest text on the page. Instead the
+   0 comes from the keyframe's `from`, and `both` fill modes apply it during the
+   delay. No animation means no fill, so the spans sit at their natural opacity
+   of 1 and the title simply appears. */
+.album-title .tchar {
+  animation: typeChar var(--type-step) steps(1, end) both;
+  animation-delay: calc(var(--type-step) * var(--i));
+}
+@keyframes typeChar { from { opacity: 0; } to { opacity: 1; } }
+
+/* One inline-block is safe: it is a single box, not one per character. */
+.type-caret {
+  display: inline-block;
+  width: 0.09em;
+  height: 0.82em;
+  margin-left: 0.04em;
+  vertical-align: -0.06em;
+  background: var(--accent);
+  animation: caretBlink 1s steps(1, end) infinite;
+}
+@keyframes caretBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 .album-artist {
   display: inline-block; margin: 0 0 22px; padding: 0;
   font-family: var(--font-display);
@@ -666,8 +713,10 @@ img { display: block; max-width: 100%; }
   display: inline-block;
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--surface-2);
-  color: var(--ink);
+  /* Mustard is a fill, never a text colour: it is 1.33:1 on --bg. Dark ink on
+     it is 10.19:1. Teal takes the cream instead, at 4.67:1. */
+  background: var(--fill-mustard);
+  color: var(--ink-strong);
   padding: 1px 7px;
   margin: 0 5px 4px 0;
   font-family: var(--font-mono);
@@ -1123,6 +1172,11 @@ img.art-pending.is-loaded { opacity: 1; }
      out position instead of sliding to it. It has to read --vinyl-out rather
      than a literal, or this would drag the disc back to the full slide and undo
      the trim. */
+  /* The per-character animation is already flattened by the global duration
+     override above, which leaves the title fully visible with no motion - the
+     right outcome. The caret is a separate infinite animation, so it is the
+     one thing here that has to be switched off explicitly. */
+  .type-caret { display: none !important; }
   .vinyl { transition: none !important; transform: translateX(var(--vinyl-out)) !important; }
   /* The two animated full-viewport grain layers this used to disable are gone —
      page texture is a static ruled grid now, so there is no ambient animation

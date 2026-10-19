@@ -856,12 +856,44 @@ async function openAlbum(id, retry){
   if (navStale(token)) return;
   $('#albumView .page').innerHTML = albumPage(album);
   revealArt($('#albumView .page'));
+  typeTitle($('#albumTitle'));
   bindCoverExpand(album);
   show('album');
   announce(`${album.title} by ${album.artist}. ${(album.tracks || []).length} tracks.`);
   // Not awaited: the album page is complete without it, and this is the one
   // call on the page that depends on a third party.
   loadVideos(album, token);
+}
+
+/* --------------------------------------------------- typewriter album title
+
+   Splits the title into one span per character and lets CSS stagger their
+   opacity, so there are no timers to leak and prefers-reduced-motion is handled
+   by the stylesheet's global duration override rather than by a branch here.
+
+   Two details that are not cosmetic:
+
+   - Array.from, not split(''), so an accented character is not cut in half.
+     The text has already been escaped by the caller, so splitting it cannot
+     resurrect a tag: each character is a literal.
+   - The spans stay display:inline. As inline-block they become individually
+     breakable and a long word wraps mid-word; measured at 5 lines versus 1.
+
+   aria-label on the <h1> carries the full title, so assistive tech reads the
+   whole thing regardless of how far the animation has got. */
+function typeTitle(el){
+  if (!el) return;
+  const full = el.getAttribute('aria-label') || el.textContent;
+  if (reducedMotion.matches) return;
+
+  const chars = Array.from(full);
+  // Cap the whole run at ~900ms. A flat 45ms makes a 29-character title take
+  // 1.3s, which reads as slow rather than deliberate.
+  const step = Math.min(45, Math.round(900 / Math.max(chars.length, 1)));
+  el.style.setProperty('--type-step', step + 'ms');
+  el.innerHTML = chars.map((c, i) =>
+    `<span class="tchar" style="--i:${i}">${escapeHtml(c)}</span>`).join('')
+    + '<span class="type-caret" aria-hidden="true"></span>';
 }
 
 function albumPage(a){
@@ -925,7 +957,7 @@ function albumPage(a){
         : artHtml('', title, 'album-art')}
       <div class="album-hero-text">
         <p class="eyebrow">${escapeHtml(a.type || 'Album')}${a.year ? ' · ' + escapeHtml(a.year) : ''}</p>
-        <h1 class="album-title">${escapeHtml(title)}</h1>
+        <h1 class="album-title" id="albumTitle" aria-label="${escapeHtml(title)}">${escapeHtml(title)}</h1>
         <button class="album-artist" data-artist="${escapeHtml(a.artist_id || '')}" data-artist-name="${escapeHtml(artist)}">${escapeHtml(artist)}</button>
         <table class="album-facts"><tbody>${facts}</tbody></table>
         <div class="album-actions">

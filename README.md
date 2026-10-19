@@ -64,23 +64,24 @@ matter rather than a dashboard.
   the brand tile
 - **Type:** Figtree throughout, Azeret Mono uppercase and letterspaced for every
   micro-label (counts, years, formats, durations, metadata keys)
-- **Palette:** "ink wash", and **there is only one theme.** Charcoal `#4a4a4a`,
-  cool grey, soft ivory `#ffffe3`, slate blue `#6d8196` (darkened 25% to `#5a6978`
-  for `--accent`)
+- **Palette:** "retro sunset", and **there is only one theme.** Burnt orange, mustard
+  `#ffce1b`, teal `#069494`, dark rust — over a warm cream ground `#f7f2e4`, with
+  dark rust (darkened to `#a1390c`) as `--accent`
 
-  This palette is a light-theme palette, which is a measurement rather than a
-  preference: the slate is darker than its own greys (L=0.212 against charcoal's
-  0.069), so it works as an accent on a light ground and cannot on a dark one.
-  The slate is 3.95:1 on ivory and 2.21:1 on charcoal, and no ground darker than
-  `#161616` lets it clear 4.5 at all. Forcing it into a dark theme pushed the
-  accent to `#dae5f1`, which is no longer slate. Rather than desaturate the
-  palette in both directions, the dark theme was removed along with its toggle.
+  Two of the four swatches are **fills, never text**, and this is a measurement
+  rather than a preference. Mustard is 1.33:1 on a light ground, and the
+  palette's teal carries neither light nor dark text (4.10 and 3.55). They are
+  therefore `--fill-mustard` and `--fill-teal`, teal darkened 20% to `#077979`,
+  and they take **opposite** text colours: dark ink on mustard (10.19:1), cream
+  on teal (4.67:1). Among the six swatch-against-swatch pairs, four fail AA
+  outright — burnt orange on teal is 1.30 — which is what a palette of sibling
+  colour blocks looks like from the inside, and why it cannot drive the theme.
 
-  The palette supplies four colours and this needs thirteen, so the rest are
+  The palette supplies four colours and this needs fifteen, so the rest are
   derived and then *solved* for contrast rather than eyeballed
 - **Texture:** a faint ruled grid across the page, two `repeating-linear-gradient`
   layers, no JS and no network request, and static rather than animated
-- Hairline rules instead of glows, near-square corners, green-tinted shadows
+- Hairline rules instead of glows, near-square corners, warm-tinted shadows
 - Tabbed search results: **Top results** interleaves artists, tracks and albums,
   with separate **Artists**, **Tracks** and **Albums** tabs and live counts
 - Artist pages with photo and discography; album pages with cover, a printed
@@ -120,23 +121,27 @@ changed, and why:
   information — record type and year on the album page — was kept.
 
 Every text and background pair clears WCAG AA (4.5:1) for body and small text —
-**23 pairs, one theme**, verified by reading the tokens back out of `styles.css`
-rather than from a draft. The tightest is 4.73:1 (`--accent` on `--surface-2`).
+**16 text pairs, one theme**, verified by reading the tokens back out of
+`styles.css` rather than from a draft. The tightest is 4.52:1 (`--faint` on
+`--surface-2`).
+
+Those 16 are checked against the surfaces text actually sits on — `--bg`,
+`--surface`, `--surface-2`. `--surface-4` is deliberately excluded because it is
+only ever a scrollbar thumb and never carries type. An earlier pass required
+text to clear it too, which produced failures that looked real and collapsed
+`--muted` and `--faint` to the same colour.
 
 Two values are deliberately *not* the source palette's own:
 
-- **`--accent` is `#5a6978`, not `#6D8196`.** The palette slate is 3.37:1 on
-  `--surface-2`, and that is a live failure rather than a theoretical one:
-  `.result-row:hover` paints `--surface` underneath accent-coloured type. Darkened
-  25% it clears 4.73:1 there and keeps the blue.
-- **`--muted` is `#5c5c5c`, not `#6e6e6e`**, which measured 4.28:1 on
-  `--surface-2`. `--faint` is `#585858` rather than the previous solver's
-  `#5d5d45`, which was technically passing but khaki.
+- **`--accent` is `#a1390c`, not `#b7410e`**, which measured 3.76:1 on
+  `--surface-2`. That is a live failure rather than a theoretical one:
+  `.result-row:hover` paints `--surface` underneath accent-coloured type.
+- **`--faint` is `#716961`**, solved against `--surface-2` rather than picked.
 
 **`--on-scrim` is a separate token.** The play button, close buttons and toast
 draw light glyphs on near-black scrims. They cannot follow `--ink-strong`, which
-is charcoal here and would disappear against a black overlay. Verified by
-compositing each real scrim alpha over `--bg`; the worst case is 4.94:1.
+is near-black here and would disappear against a black overlay. Verified by
+compositing each real scrim alpha over `--bg`.
 
 ### Known limitations
 
@@ -336,6 +341,28 @@ would reintroduce the drift.
 shadow, which *should* lag in the plane as the sleeve tilts, and being blurred
 it has no hard edge to expose.
 
+### The typewriter album title
+
+Opening an album types its title in one character at a time. `typeTitle()` splits
+the title into `<span class="tchar">` per character and lets CSS stagger their
+opacity through `--type-step`, so there are no timers to leak and
+`prefers-reduced-motion` is handled by the stylesheet's global duration override
+rather than by a branch in JS. Only the caret needed an explicit rule to stop
+blinking.
+
+**The character spans must stay `display: inline`.** This was measured, not
+assumed: in a 220px column a 48-character word wraps to **5 lines** as
+inline-block spans but stays on **1** as inline ones, because each inline-block
+box is individually breakable. Using inline-block to animate characters is the
+obvious move and it shreds long album titles mid-word. Transforms do not apply to
+non-replaced inline elements either, so the motion is opacity-only regardless.
+
+Two smaller decisions: the run is capped at roughly 900ms (`min(45ms, 900/len)`)
+because a flat 45ms makes a 29-character title take 1.3s, and the split uses
+`Array.from` rather than `split('')` so an accented character is not cut in half.
+The `aria-label` on the `<h1>` carries the full title, so assistive tech reads the
+whole name regardless of how far the animation has got.
+
 ### The vinyl disc
 
 The album hero has a record peeking out from behind the sleeve, on hover and on
@@ -368,16 +395,16 @@ sliding, which is the same value the hover rule uses.
 There is one disc — `--disc-ring-a` / `--disc-ring-b` are declared on `:root`.
 That is only safe because the disc is trimmed, and the reason is polarity: a
 disc reads only when it is darker than the type in front of it, but this
-theme's album title is charcoal (`#4a4a4a`), so a disc reaching the text column
+theme's album title is near-black (`#2a2520`), so a disc reaching the text column
 landed at **1.01:1** and the title did not degrade, it vanished. No colour fixes
-that with a full slide — `--accent` `#5a6978` needs a disc luminance of 0.728 to
+that with a full slide - `--accent` `#a1390c` needs a disc luminance of 0.728 to
 stay readable, which is a disc invisible as a disc. Trimming means the disc sits
 behind no text at all, which frees the colour completely. `--vinyl-out` is
 restored to `-45%` at `max-width: 720px`, where the hero stacks and the text is
 below the cover.
 
 The disc stays a neutral grey (`#767b77` / `#868c87`) rather than joining the
-palette. A record is not slate, and a tinted disc reads as decoration. The previous
+palette. A record is not rust, and a tinted disc reads as decoration. The previous
 warm grey was cooled rather than tinted, because it had enough brown in it to
 look like a smudge on this background.
 
