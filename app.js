@@ -867,38 +867,90 @@ async function openAlbum(id, retry){
 
 /* --------------------------------------------------- typewriter album title
 
-   Splits the title into one span per character and lets CSS stagger their
-   opacity, so there are no timers to leak and prefers-reduced-motion is handled
-   by the stylesheet's global duration override rather than by a branch here.
+   This used to be a pure-CSS reveal: one opacity-animated span per character,
+   staggered by animation-delay, every span occupying its layout space from t=0
+   so nothing below it ever moved. That part worked and was verified. The caret
+   did not, and it was the thing you actually see.
 
-   Two details that are not cosmetic:
+   The caret was a single inline-block appended after the LAST span, so it was
+   pinned to the right-hand edge of the finished title for the entire run and
+   never travelled with the text. Measured mid-run on "In Rainbows": at t=800ms
+   the visible characters ended at x=53 while the caret sat at x=172 - 119px to
+   the right of the character actually being typed. Before the first character
+   landed there was a 450ms window in which the only thing on screen was a
+   stray bar floating in the title's future space.
 
-   - Array.from, not split(''), so an accented character is not cut in half.
-     The text has already been escaped by the caller, so splitting it cannot
-     resurrect a tag: each character is a literal.
-   - The spans stay display:inline. As inline-block they become individually
-     breakable and a long word wraps mid-word; measured at 5 lines versus 1.
+   Driving the reveal from a timer instead fixes that for free, because the caret
+   is inserted before each new character and therefore always sits immediately
+   after the last one typed. Two other things improve with it:
+
+   - Characters are plain text nodes rather than one span apiece, so line
+     breaking is ordinary text breaking. The measurement that previously forced
+     the spans to stay display:inline - a 48-character word wrapping to 5 lines
+     as inline-block - no longer constrains anything, because there are no boxes
+     at all to make breakable.
+   - Nothing is waiting on a keyframe. At any instant the heading contains
+     exactly the characters typed so far, so a dropped frame or a stalled
+     animation cannot leave a title stuck half-invisible.
+
+   The trade is deliberate and worth stating: the title now grows as it types, so
+   content below shifts during the run. That is what a typewriter does, it is
+   bounded by the same ~2s cap, and the hero's text column is a grid track with
+   min-width:0, so a long unbroken title cannot widen the layout.
+
+   Array.from, not split(''), so an accented character is not cut in half. The
+   characters go in as text nodes, so no escaping question arises at all.
 
    aria-label on the <h1> carries the full title, so assistive tech reads the
-   whole thing regardless of how far the animation has got. */
+   whole thing regardless of how far the run has got.
+
+   Re-entrancy: opening a second album while a run is still going must not leave
+   the old timer appending characters to a heading that has been replaced. The
+   token below retires the previous run, and tick() also bails if the node was
+   torn out of the document by a view change. */
+let typeRunToken = 0;
+
 function typeTitle(el){
   if (!el) return;
   const full = el.getAttribute('aria-label') || el.textContent;
+  // Handled here rather than by the stylesheet's global duration override,
+  // because the reveal is no longer an animation. A plain return leaves the
+  // heading as the server-rendered markup already had it: the whole title.
   if (reducedMotion.matches) return;
 
+  const token = ++typeRunToken;
   const chars = Array.from(full);
   // Slower than the first pass, which typed 11 characters in 495ms starting at
   // t=0 - i.e. entirely underneath the 320ms viewIn fade, so it was never
   // actually seen. The run is capped near 2s and held back until the page has
   // finished settling.
   const step = Math.min(75, Math.round(2000 / Math.max(chars.length, 1)));
-  el.style.setProperty('--type-step', step + 'ms');
-  // The caret needs to know how many characters there are so it can stop
-  // blinking exactly as the last one lands, rather than for ever.
-  el.style.setProperty('--type-count', String(chars.length));
-  el.innerHTML = chars.map((c, i) =>
-    `<span class="tchar" style="--i:${i}">${escapeHtml(c)}</span>`).join('')
-    + '<span class="type-caret" aria-hidden="true"></span>';
+  // Outlasts the 320ms viewIn fade. The first character also waits one more step
+  // so the caret is the first thing to appear, sitting at position zero.
+  const startDelay = 450;
+
+  el.textContent = '';
+  const caret = document.createElement('span');
+  caret.className = 'type-caret';
+  caret.setAttribute('aria-hidden', 'true');
+  el.appendChild(caret);
+
+  let i = 0;
+  const finish = () => { if (token === typeRunToken) caret.remove(); };
+  const tick = () => {
+    if (token !== typeRunToken || !el.isConnected) return;
+    // Checked before the insert, and the caret is only ever removed from inside
+    // this branch. A separate timer used to do the removal, which raced the run:
+    // once the caret left the tree, the next tick's insertBefore(caret) had a
+    // detached reference and threw, silently truncating the title. Measured that
+    // way, "In Rainbows" stopped at "In Rainbo".
+    if (i >= chars.length) { finish(); return; }
+    el.insertBefore(document.createTextNode(chars[i]), caret);
+    i += 1;
+    window.setTimeout(tick, step);
+  };
+
+  window.setTimeout(tick, startDelay + step);
 }
 
 function albumPage(a){

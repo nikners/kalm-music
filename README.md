@@ -365,37 +365,70 @@ it has no hard edge to expose.
 
 ### The typewriter album title
 
-Opening an album types its title in one character at a time. `typeTitle()` splits
-the title into `<span class="tchar">` per character and lets CSS stagger their
-opacity through `--type-step`, so there are no timers to leak and
-`prefers-reduced-motion` is handled by the stylesheet's global duration override
-rather than by a branch in JS. Only the caret needed an explicit rule to stop
-blinking.
+Opening an album types its title in one character at a time. `typeTitle()` drives
+the reveal from a `setTimeout` chain, inserting one plain text node per character
+immediately before the caret, and removes the caret when the run ends.
 
-**The character spans must stay `display: inline`.** This was measured, not
-assumed: in a 220px column a 48-character word wraps to **5 lines** as
-inline-block spans but stays on **1** as inline ones, because each inline-block
-box is individually breakable. Using inline-block to animate characters is the
-obvious move and it shreds long album titles mid-word. Transforms do not apply to
-non-replaced inline elements either, so the motion is opacity-only regardless.
+**This was a CSS reveal until it was reported as broken, and the reason it was
+broken is the interesting part.** The old version made one
+`<span class="tchar">` per character and staggered their opacity through
+`animation-delay`, so there were no timers and nothing could leak. Every span held
+its layout space from `t=0`, so nothing below the title ever moved.
 
-**`--type-delay: 450ms` holds the whole run back until the page has settled.**
-The first version typed from `t=0`, which put all 495ms of it underneath the
-320ms `viewIn` fade, so it was never actually seen. The run is now
-`min(75ms, 2000/len)`: "In Rainbows" starts at 450ms, finishes at 1.275s, and a
-40-character title caps at about 2.45s.
+The caret could not work in that design. To sit in the text flow it had to go
+*after the last span*, which pinned it to the right-hand edge of the **finished**
+title for the whole run instead of travelling with the text. Measured mid-run on
+"In Rainbows", by freezing the clock and reading geometry:
 
-The caret blinks only while typing and goes away as the last character lands,
-via two `animation-delay` values that straddle the run. Getting that wrong is
-easy — an earlier version put both delays at the end, so the caret appeared and
-vanished in the same instant and never blinked at all.
+| at | visible text ends at | caret sits at | gap |
+|---|---|---|---|
+| 500ms | — (nothing typed) | 172px | — |
+| 800ms | x=53 | x=172 | **119px** |
+| 1200ms | x=132 | x=172 | 41px |
+| 1300ms | x=171 | x=172 | 1px |
 
-Two smaller decisions: the split uses `Array.from` rather than `split('')` so an
-accented character is not cut in half, and the `aria-label` on the `<h1>` carries
-the full title so assistive tech reads the whole name regardless of how far the
-animation has got. The characters are also **not** hidden by a base
-`opacity: 0` — the 0 comes from the keyframe's `from` with `both` fill modes, so
-if the animation never runs the title is simply present rather than invisible.
+So the bar sat 119px to the right of the character being typed, and for the first
+450ms the only thing on screen was a stray bar floating in the title's future
+space. A timer-driven reveal fixes it for free, because the caret is inserted
+before each new character and therefore always trails the typing head. Verified
+afterwards: the caret-to-text gap is **2px** (its own `0.04em` margin) at every
+sample through the run, and it travels 142px on an 11-character title.
+
+**The obvious fix contains a second bug, which is worth recording.** Removing the
+caret from a separate `setTimeout` at the end of the run races the run itself:
+once the caret leaves the tree, the next `tick` calls
+`el.insertBefore(node, caret)` with a detached reference, which throws and kills
+the chain silently. Measured: "In Rainbows" stopped at **"In Rainbo"**. The
+removal now happens only inside `tick`, on the branch that runs after the last
+character has been inserted.
+
+**The cost of the rewrite is accepted deliberately.** The title now grows as it
+types, so content below shifts during the run. That is what a typewriter does, it
+is bounded by the same ~2s cap, and the hero's text column is a grid track with
+`min-width: 0`. Checked against a deliberately hostile 104-character title: it
+completes in full and wraps to **exactly** the same 173px height as the same
+string rendered as plain text, with no overflow of the track or the page.
+
+The rewrite also retired a measurement. The old spans had to stay `display:
+inline`, because as inline-block they became individually breakable and a
+48-character word wrapped to 5 lines instead of 1. Characters are now plain text
+nodes, so line breaking is ordinary text breaking and there are no boxes left to
+constrain.
+
+Timing: a **450ms** start delay, then `min(75ms, 2000/len)` per character. The
+first version typed from `t=0`, which put all 495ms of it underneath the 320ms
+`viewIn` fade, so it was never seen at all. The first character also waits one
+extra step, so the caret is the first thing to appear, sitting at position zero.
+
+Three smaller decisions: the split uses `Array.from` rather than `split('')` so an
+accented character is not cut in half; the `aria-label` on the `<h1>` carries the
+full title so assistive tech reads the whole name however far the run has got;
+and `prefers-reduced-motion` is now a branch in JS rather than the stylesheet's
+global duration override, because the reveal is no longer an animation — a plain
+return leaves the heading fully rendered. Re-entrancy is handled with a run token,
+so opening a second album mid-run cannot leave the old chain appending to a
+heading that has been replaced; verified by firing two runs back to back and
+finding exactly one caret.
 
 ### The vinyl disc
 

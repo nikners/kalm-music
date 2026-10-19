@@ -75,10 +75,6 @@
   --track-tight: 0.03em;
   --track-mid: 0.06em;
   --track-wide: 0.12em;
-  /* How long the album title waits before it starts typing. It has to outlast
-     the 320ms viewIn fade, or the whole run happens while the page is still
-     arriving and is never actually seen. */
-  --type-delay: 450ms;
   /* Retro shape. Controls go to pills and album artwork goes square: 70s record
      sleeves were square and the controls around them were not. Circles are left
      alone - a circular arrow or close button is a circle in every decade. */
@@ -656,24 +652,42 @@ img { display: block; max-width: 100%; }
 
    The title types itself in one character at a time when an album opens.
 
-   The character spans MUST stay display:inline. Measured: at a 220px column a
-   48-character word wraps to 5 lines as inline-block spans but stays on 1 as
-   inline ones, because inline-block boxes are individually breakable. That
-   rules out the usual trick of using inline-block to animate characters — and
-   transforms do not apply to non-replaced inline elements anyway, so the
-   motion is opacity only. */
-/* No `opacity: 0` in the base rule on purpose. Hiding the characters and
-   revealing them with the animation means that if the animation never runs -
-   animations unsupported, or disabled - the album title stays invisible, which
-   is the worst possible failure for the largest text on the page. Instead the
-   0 comes from the keyframe's `from`, and `both` fill modes apply it during the
-   delay. No animation means no fill, so the spans sit at their natural opacity
-   of 1 and the title simply appears. */
-.album-title .tchar {
-  animation: typeChar var(--type-step) steps(1, end) both;
-  animation-delay: calc(var(--type-delay) + var(--type-step) * var(--i));
-}
-@keyframes typeChar { from { opacity: 0; } to { opacity: 1; } }
+   It is driven entirely by typeTitle() in app.js. This used to be a pure-CSS
+   reveal: one opacity-animated span per character, staggered by
+   animation-delay, with every span holding its layout space from t=0 so nothing
+   below it ever moved. That part worked and was verified. The caret did not,
+   and the caret is what you actually see.
+
+   The caret had to sit after the LAST span to stay in the text flow, which
+   pinned it to the right-hand edge of the finished title for the whole run
+   instead of letting it travel. Measured mid-run on "In Rainbows": at t=800ms
+   the visible characters ended at x=53 while the caret sat at x=172 - 119px to
+   the right of the character being typed. And for the 450ms before the first
+   character landed, the only thing on screen was a stray bar floating in the
+   title's future space.
+
+   A timer-driven reveal fixes that for free: typeTitle() inserts the caret
+   before each new character, so it always trails the typing head. Characters
+   are plain text nodes rather than one span apiece, so line breaking is ordinary
+   text breaking - the measurement that once forced those spans to stay
+   display:inline no longer constrains anything, because there are no boxes left
+   to make breakable.
+
+   The cost is accepted deliberately: the title grows as it types, so content
+   below shifts during the run. That is what a typewriter does, it is bounded by
+   the same ~2s cap, and the hero text column is a grid track with min-width:0,
+   so a long unbroken title cannot widen the layout.
+
+   The --type-step, --type-delay and --type-count tokens are gone with all this. */
+/* Solid, not blinking. A 75ms reveal window is far shorter than any blink
+   period, so a blinking caret would read as a bar travelling, which is what a
+   fast typist actually looks like. typeTitle() removes it when the run ends, so
+   it never blinks on for ever on a settled heading.
+
+   Still inline-block, and still the only box in the heading. That is safe: it is
+   a single box rather than one per character, so it cannot shred a long title the
+   way per-character inline-blocks did. */
+/* The per-character opacity animation is gone. See the note above. */
 
 /* One inline-block is safe: it is a single box, not one per character. It
    blinks only while the title is being typed, then goes away as the last
@@ -685,14 +699,7 @@ img { display: block; max-width: 100%; }
   margin-left: 0.04em;
   vertical-align: -0.06em;
   background: var(--accent);
-  animation: caretBlink 1s steps(1, end) infinite, caretGone 0.01s linear forwards;
-  /* Blink from the moment typing starts; go away the moment it ends. Both
-     delays straddle the run rather than sitting at the end of it. */
-  animation-delay: var(--type-delay),
-                   calc(var(--type-delay) + var(--type-step) * var(--type-count));
 }
-@keyframes caretGone { to { opacity: 0; } }
-@keyframes caretBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 .album-artist {
   display: inline-block; margin: 0 0 22px; padding: 0;
   font-family: var(--font-display);
@@ -1195,10 +1202,14 @@ img.art-pending.is-loaded { opacity: 1; }
      out position instead of sliding to it. It has to read --vinyl-out rather
      than a literal, or this would drag the disc back to the full slide and undo
      the trim. */
-  /* The per-character animation is already flattened by the global duration
-     override above, which leaves the title fully visible with no motion - the
-     right outcome. The caret is a separate infinite animation, so it is the
-     one thing here that has to be switched off explicitly. */
+  /* The typewriter no longer needs flattening here. It was never a CSS
+     animation - typeTitle() checks prefers-reduced-motion itself and returns
+     with the heading left as fully rendered, which is the right outcome and no
+     longer depends on the global duration override above.
+
+     This rule is belt and braces for one edge case: if reduced motion is switched
+     on part-way through a run, the timer chain already in flight is not cancelled
+     and could leave the caret on a heading that is now supposed to be static. */
   .type-caret { display: none !important; }
   .vinyl { transition: none !important; transform: translateX(var(--vinyl-out)) !important; }
   /* The two animated full-viewport grain layers this used to disable are gone —
