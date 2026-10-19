@@ -256,13 +256,35 @@ img { display: block; max-width: 100%; }
   position: sticky; top: 0; z-index: 20;
 }
 
-/* Brand sits inline with navigation now, so it needs no stacking of its own. */
+/* Brand sits inline with navigation now, so it needs no stacking of its own.
+
+   The width is RESERVED, not intrinsic, and that is load-bearing. `.brand` is a
+   flex item in the topbar row with `flex: none`, so an element that grows on hover
+   displaces everything after it. Measured before this was fixed: opening the logo
+   moved the entire nav 23px to the right, because .topbar-search is pinned by
+   margin-left:auto and could not absorb it. Hovering the logo visibly shoved the
+   navigation sideways, which reads as a broken layout rather than a flourish.
+
+   Reserving the full 55px means the footprint is constant from first paint, so the
+   reveal happens inside space that was always there and no sibling ever moves. The
+   collapsed box is centred in that slot by margin:auto on .brand-mark, which splits
+   the leftover space evenly instead of dumping it all on the right. */
 .brand {
-  display: flex; align-items: center;
+  display: flex; align-items: center; justify-content: center;
   flex: none;
+  /* Measured open width of the box. 55 = 44px of "Kalm" advance plus 11px of
+     padding on each side, so this is exact rather than rounded up. */
+  width: 55px;
+  /* Zeroed because the button's inherited padding silently ate the slot. Measured
+     while debugging: .brand was padding 6px left and right, so its content box
+     was 43px rather than 55, the trailing "m" was clipped by 1px, and margin:0
+     auto computed to 0px because there was no free space left to distribute - so
+     the box was not centring either. Harmless while .brand held a 27px tile and
+     fatal the moment the slot had to be exact. */
+  padding: 0;
   color: var(--ink-strong);
   /* The focus ring belongs to the button rather than the box, because the box
-     translates on hover and a ring drawn on it would travel with it. */
+     translates on press and a ring drawn on it would travel with it. */
   border-radius: 3px;
 }
 .brand:focus-visible {
@@ -299,10 +321,20 @@ img { display: block; max-width: 100%; }
    value is the only way to interpolate toward content-driven width, and
    overflow:hidden is what actually clips the tail letters while it is closed.
 
+   The width animates INSIDE a fixed 55px slot reserved by .brand, so the topbar
+   never reflows. Before that, hovering the logo pushed the whole navigation 23px
+   sideways - see the note on .brand above.
+
    Why hover does NOT press: hover reveals, :active presses. Both on one trigger
    meant an expanding box lurching down-right at the same time, which reads as a
    glitch rather than a gesture. Splitting them keeps the press legible after the
-   name has appeared. */
+   name has appeared.
+
+   Growing rightward is not safe either: a box that widens under a stationary
+   pointer can lose the pointer, which drops :hover and snaps it shut. Measured -
+   the width walked 55 -> 49 -> 34 -> 31px and collapsed again. Centring in the
+   reserved slot keeps the pointer inside the box throughout, so it opens once and
+   holds. */
 .brand-mark {
   display: flex; align-items: center;
   padding: 6px 11px;
@@ -310,6 +342,9 @@ img { display: block; max-width: 100%; }
      The 1px over is so subpixel rounding cannot shave the stem off the K. */
   max-width: 32px;
   overflow: hidden;
+  /* Centred in the 55px slot .brand reserves, so the collapsed box sits in the
+     middle of its own space instead of hard against the left edge. */
+  margin: 0 auto;
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-display);
