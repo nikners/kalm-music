@@ -258,24 +258,92 @@ img { display: block; max-width: 100%; }
 
 /* Brand sits inline with navigation now, so it needs no stacking of its own. */
 .brand {
-  display: flex; align-items: center; gap: 9px;
+  display: flex; align-items: center;
   flex: none;
   color: var(--ink-strong);
-  transition: opacity var(--dur-fast) var(--ease);
+  /* The focus ring belongs to the button rather than the box, because the box
+     translates on hover and a ring drawn on it would travel with it. */
+  border-radius: 3px;
 }
-.brand:hover { opacity: 0.7; }
+.brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The whole name in one box, and pressable.
+
+   The press is the point rather than decoration. Hard offset shadows already
+   read as pressable on shelf art, cards and the toast, and the brand was the
+   one thing in that family that could not be pressed - which made it read as a
+   printed label rather than as the control it is. Now it moves under the hand.
+
+   The offset is 2px rather than the 3px --shadow carries, because .topbar has a
+   1px border-bottom immediately underneath and a 3px shadow butts into it.
+
+   .brand used to dim to opacity 0.7 on hover. That is gone: an opacity fade
+   fighting a translate reads as mush rather than as a single gesture.
+
+   Font size is 15px, down from the 20px the old standalone wordmark used. Four
+   characters inside a topbar-height box cannot be 20px, and Righteous is a
+   decorative face that thins out quickly - if this reads light in the specimen
+   pass, 14px is the next move and not a redesign. */
 .brand-mark {
-  width: 27px; height: 27px; flex: none;
-  display: grid; place-items: center;
+  display: flex; align-items: center;
+  padding: 6px 11px;
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
-  border-radius: 2px;
+  letter-spacing: -0.01em;
+  border-radius: 3px;
+  box-shadow: 2px 2px 0 rgba(74, 42, 20, 0.85);
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast) var(--ease-spring);
 }
-.brand-name { font-family: var(--font-display); font-size: 20px; font-weight: var(--display-weight); letter-spacing: -0.02em; }
+.brand:hover .brand-mark { transform: translate(2px, 2px); box-shadow: 0 0 0 rgba(74, 42, 20, 0); }
+.brand:active .brand-mark { transform: translate(3px, 3px); box-shadow: 0 0 0 rgba(74, 42, 20, 0); }
+
+/* One box per letter, so the stagger has something to animate. inline-block is
+   safe here even though it is banned for the album title: four fixed short
+   words in a shrink-to-fit box cannot wrap, so there is nothing to shred. */
+.brand-l {
+  display: inline-block;
+}
+
+/* The animation is OPT-IN, applied by primeBrandFlourish() in app.js only once
+   it knows the page is visible to animate it. That is the whole point of the
+   class rather than a convenience.
+
+   A fade starting at opacity 0 under a `both` fill pins the element at 0 even
+   when the animation never advances - `both` applies the backwards fill during
+   the delay regardless of whether time is running. Measured in a backgrounded
+   tab, where `currentTime` stayed at -1, all four letters sat at opacity 0: an
+   empty accent box where the logo should be. For page content that is an
+   unflushed animation. For a sticky topbar logo it reads as a broken site.
+
+   So the default state of .brand-l carries no animation, no fill and no base
+   opacity:0, and the letters are simply visible. `.brand-animate` is the only
+   thing that can hide them, and JS declines to add it when it cannot honour it. */
+/* `r.style.animation` reads back as an empty string here, and that is expected
+   rather than a fault: a shorthand containing var() is held pending substitution
+   and cannot be expanded at parse time, so CSSOM reports empty longhands. The
+   animation itself is fine - with the class applied, getAnimations() reports
+   animationName brandLtr on all four letters at delays 0/55/110/165ms. Read the
+   live computed style or the animation objects, not this property. */
+.brand-animate .brand-l {
+  animation: brandLtr var(--dur) var(--ease-soft) both;
+  animation-delay: calc(55ms * var(--i));
+}
+/* Indexed here rather than inline on the span, so the markup stays free of
+   presentation. */
+.brand-l:nth-child(1) { --i: 0; }
+.brand-l:nth-child(2) { --i: 1; }
+.brand-l:nth-child(3) { --i: 2; }
+.brand-l:nth-child(4) { --i: 3; }
+
+@keyframes brandLtr { from { opacity: 0; } to { opacity: 1; } }
 
 /* Three peer destinations read as peer tabs. The active tab's underline lands on
    the topbar's own bottom border, which is what distinguishes this from the
@@ -1211,6 +1279,12 @@ img.art-pending.is-loaded { opacity: 1; }
      on part-way through a run, the timer chain already in flight is not cancelled
      and could leave the caret on a heading that is now supposed to be static. */
   .type-caret { display: none !important; }
+  /* The brand press. Its box-shadow already collapses under the global override
+     above only if it is a transition, and it is - but the translate is not an
+     animation and survives untouched, so the box would slide on hover with no
+     shadow to press against and no spring to land it. Both properties go. */
+  .brand-mark { transition: none !important; }
+  .brand:hover .brand-mark, .brand:active .brand-mark { transform: none !important; box-shadow: 2px 2px 0 rgba(74, 42, 20, 0.85) !important; }
   .vinyl { transition: none !important; transform: translateX(var(--vinyl-out)) !important; }
   /* The two animated full-viewport grain layers this used to disable are gone —
      page texture is a static ruled grid now, so there is no ambient animation
@@ -1243,7 +1317,10 @@ img.art-pending.is-loaded { opacity: 1; }
   /* The hero stacks, so the text sits below the cover and there is nothing to
      the right of the sleeve to collide with. The disc gets its full slide back. */
   :root { --vinyl-out: -45%; }
-  .brand-name { display: none; }
+  /* Drop the wordmark to its initial, but keep the box: the letter is a child
+     now, so this cannot be `display: none` on .brand-name any more - that would
+     have left an empty accent box where the logo should be. */
+  .brand-l:nth-child(n+2) { display: none; }
   .album-hero, .artist-hero { grid-template-columns: 1fr; }
   .album-hero > .album-art, .album-hero > .art-placeholder, .album-hero .cover-expand, .album-hero .hero-cover { width: 100%; max-width: 300px; }
   .artist-hero > .artist-photo, .artist-hero > .art-placeholder { width: 140px; }

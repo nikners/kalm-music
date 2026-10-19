@@ -57,7 +57,8 @@ matter rather than a dashboard.
   keeps its number permanently
 - **Layout:** a single sticky topbar carrying brand, four navigation tabs and
   search. There is no sidebar; the 232px it occupied went
-  back to the album grid. Labels collapse to icons below 940px
+  back to the album grid. Labels collapse to icons below 940px. The brand is one
+  55×27 box holding the whole name, and presses on hover
 - **Corners:** retro shape — controls are pills (`--radius-control: 999px`) and
   album artwork is square (`--radius-art: 0`), because 70s sleeves were square
   and the controls around them were not. Circles stay circles: a circular arrow
@@ -230,6 +231,51 @@ load. Deezer's CDN is reliable and its metadata is richer.
   migrated once.
 
 ## Motion
+
+### The brand
+
+The logo is one box holding the whole name: a 27×27 accent tile with a `K` beside
+a separate 20px `kalm` wordmark became a single 55×27 box, 29px narrower, so the
+topbar gained room rather than losing it. It is square-cornered at 3px, which is
+the record-label tile read and deliberately *not* `--radius-control` — a pill
+containing a wordmark reads as a button, and this one already is one.
+
+**The press is the substance, not decoration.** Hard offset shadows already read
+as pressable on shelf art, cards and the toast, and the brand was the one thing in
+that family that could not be pressed, which made it look like a printed label
+rather than the control it is. Hover translates it 2×2 and collapses the shadow to
+zero, `:active` goes to 3×3, both on `--ease-spring`. The offset is 2px rather
+than `--shadow`'s 3px because `.topbar` has a `1px` border-bottom immediately
+underneath and a 3px shadow butts into it. `.brand:hover { opacity: 0.7 }` is
+gone: an opacity fade fighting a translate reads as mush rather than as one
+gesture.
+
+**The letter stagger is opt-in, and that is load-bearing.** `.brand-l` has no
+animation by default; `primeBrandFlourish()` in `app.js` adds `.brand-animate`
+only when the page is visible to animate it and reduced motion is off.
+
+This started as an unconditional animation and was wrong. A fade from `opacity: 0`
+under a `both` fill pins the element at 0 whenever the animation fails to advance —
+the backwards fill applies during the delay regardless of whether time is running.
+Measured in a backgrounded tab, where `currentTime` stays at `-1`, all four letters
+sat at opacity 0: **an empty accent box where the logo should be**. On page
+content that is merely an unflushed animation; on a sticky topbar logo it reads as
+a broken site. So the default state carries no animation, no fill and no base
+`opacity: 0`, and the letters are simply visible. This is the one place in the
+stylesheet where that rule is load-bearing rather than precautionary — and note the
+album title's equivalent claim is weaker, since its own CSS is gone but a stalled
+JS timer would still leave a partial title.
+
+Each letter is its own span for two reasons: the stagger needs boxes to animate,
+and the narrow-screen fallback is then one rule, `.brand-l:nth-child(n+2)`. The
+previous `display: none` on `.brand-name` would have emptied the box instead,
+since the word now lives inside it.
+
+**Type is 15px, down from the 20px the standalone wordmark used.** Four characters
+cannot be 20px inside a topbar-height box, and Righteous thins quickly at small
+sizes. If it reads light, 14px is the next move and not a redesign.
+
+The favicon stays a single `K` on purpose: four characters are unreadable at 16px.
 
 ### Ambient shelf drift
 

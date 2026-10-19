@@ -1544,6 +1544,33 @@ document.addEventListener('click', e => {
   if (albumTarget) openAlbum(albumTarget.dataset.album);
 });
 
+/* ------------------------------------------------------------ brand flourish
+
+   The Kalm wordmark fades in letter by letter, but only when the page is
+   actually visible to animate it.
+
+   This is a gate rather than an unconditional animation because a CSS animation
+   that starts from opacity 0 and is never advanced leaves the element at 0
+   forever. That is not hypothetical: measured in a backgrounded tab, where
+   `currentTime` stays at -1, `visibilityState` is "hidden", and every letter sat
+   at opacity 0 - a blank box where the logo should be. The same holds for a
+   throttled tab and for any environment that pauses animations.
+
+   It is specifically the logo, so the consequence is worse here than it would
+   be for page content: a sticky topbar that renders empty looks like a broken
+   site rather than an unflushed animation. So the animation is opt-in, set
+   only once we know it will run. Without the class the letters have no animation
+   at all and therefore no fill, so they sit at their natural opacity of 1.
+
+   Reduced motion is excluded for the ordinary reason. */
+(function primeBrandFlourish(){
+  const letter = document.querySelector('.brand-l');
+  if (!letter) return;
+  if (reducedMotion.matches) return;
+  if (document.visibilityState !== 'visible') return;
+  letter.closest('.brand-mark').classList.add('brand-animate');
+})();
+
 /* --------------------------------------------------------------- help panel */
 const helpDialog = $('#helpDialog');
 

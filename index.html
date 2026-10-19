@@ -27,8 +27,20 @@
   </head>
   <body>
     <header class="topbar">
+      <!-- The whole name in one box. Was a 27x27 accent tile holding "K" beside a
+           sibling 20px wordmark, so two elements where there is now one.
+
+           aria-hidden because the button's own aria-label already carries the
+           name. Without it a screen reader announces K, a, l and m as four
+           separate items.
+
+           One span per letter, rather than a single text node, for two reasons:
+           the stagger needs per-letter boxes to animate, and the narrow-screen
+           fallback is then just .brand-l:nth-child(n+2) { display: none }. A
+           ::after content swap would have been tidier for the text, but it puts
+           the wordmark somewhere the animation cannot reach it. -->
       <button class="brand" id="brandHome" aria-label="Kalm — go to Discover">
-        <span class="brand-mark">K</span><span class="brand-name">kalm</span>
+        <span class="brand-mark" aria-hidden="true"><span class="brand-l">K</span><span class="brand-l">a</span><span class="brand-l">l</span><span class="brand-l">m</span></span>
       </button>
 
       <!-- Four peer destinations, so they read as peer tabs. Replaces the
