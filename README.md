@@ -58,7 +58,7 @@ matter rather than a dashboard.
 - **Layout:** a single sticky topbar carrying brand, four navigation tabs and
   search. There is no sidebar; the 232px it occupied went
   back to the album grid. Labels collapse to icons below 940px. The brand is one
-  55×27 box holding the whole name, and presses on hover
+  box holding the whole name, resting at `K` and opening to `Kalm` on hover
 - **Corners:** retro shape — controls are pills (`--radius-control: 999px`) and
   album artwork is square (`--radius-art: 0`), because 70s sleeves were square
   and the controls around them were not. Circles stay circles: a circular arrow
@@ -235,41 +235,53 @@ load. Deezer's CDN is reliable and its metadata is richer.
 ### The brand
 
 The logo is one box holding the whole name: a 27×27 accent tile with a `K` beside
-a separate 20px `kalm` wordmark became a single 55×27 box, 29px narrower, so the
-topbar gained room rather than losing it. It is square-cornered at 3px, which is
-the record-label tile read and deliberately *not* `--radius-control` — a pill
-containing a wordmark reads as a button, and this one already is one.
+a separate 20px `kalm` wordmark became a single box, and the topbar gained room
+rather than losing it. It is square-cornered at 3px, which is the record-label tile
+read and deliberately *not* `--radius-control` — a pill containing a wordmark reads
+as a button, and this one already is one.
 
-**The press is the substance, not decoration.** Hard offset shadows already read
-as pressable on shelf art, cards and the toast, and the brand was the one thing in
-that family that could not be pressed, which made it look like a printed label
-rather than the control it is. Hover translates it 2×2 and collapses the shadow to
-zero, `:active` goes to 3×3, both on `--ease-spring`. The offset is 2px rather
-than `--shadow`'s 3px because `.topbar` has a `1px` border-bottom immediately
-underneath and a 3px shadow butts into it. `.brand:hover { opacity: 0.7 }` is
-gone: an opacity fade fighting a translate reads as mush rather than as one
-gesture.
+**It rests collapsed at `K` and opens to `Kalm` on hover.** Measured 31px → 55px, so
+the growth is 24px and the resting state is still wider than the 27px tile it
+replaced. This is why there is **no breakpoint**: an earlier version dropped to `K`
+below 720px and it never fired, because the viewport was 800px. Rather than move
+the number, the collapsed state became the default, which deletes the special case
+entirely — there is nothing left for a media query to say that the box does not
+already do at every width.
 
-**The letter stagger is opt-in, and that is load-bearing.** `.brand-l` has no
-animation by default; `primeBrandFlourish()` in `app.js` adds `.brand-animate`
-only when the page is visible to animate it and reduced motion is off.
+`max-width` rather than `width`, because the letters are inline-block of natural
+width and CSS cannot interpolate toward `auto`. `overflow: hidden` is what actually
+clips the tail while closed. The 32px resting value is 9.2px of `K` plus 22px of
+padding, with 1px of slack so subpixel rounding cannot shave the stem.
 
-This started as an unconditional animation and was wrong. A fade from `opacity: 0`
-under a `both` fill pins the element at 0 whenever the animation fails to advance —
-the backwards fill applies during the delay regardless of whether time is running.
-Measured in a backgrounded tab, where `currentTime` stays at `-1`, all four letters
-sat at opacity 0: **an empty accent box where the logo should be**. On page
-content that is merely an unflushed animation; on a sticky topbar logo it reads as
-a broken site. So the default state carries no animation, no fill and no base
-`opacity: 0`, and the letters are simply visible. This is the one place in the
-stylesheet where that rule is load-bearing rather than precautionary — and note the
-album title's equivalent claim is weaker, since its own CSS is gone but a stalled
-JS timer would still leave a partial title.
+**Hover reveals, `:active` presses.** They were originally both on `:hover`, which
+produced an expanding box lurching down-right simultaneously — a glitch, not a
+gesture. Split by trigger, each reads as itself: the name arrives, then the box
+sinks under the pointer. The press offset is 2px rather than `--shadow`'s 3px
+because `.topbar` has a `1px` border-bottom immediately underneath.
 
-Each letter is its own span for two reasons: the stagger needs boxes to animate,
-and the narrow-screen fallback is then one rule, `.brand-l:nth-child(n+2)`. The
-previous `display: none` on `.brand-name` would have emptied the box instead,
-since the word now lives inside it.
+**Touch never collapses.** `@media not all and (hover: hover)` opens the box
+permanently where there is no hover to reopen it, since a phone would otherwise be
+stuck at `K` forever. Desktop browsers report `hover: hover` and are unaffected.
+
+**The letter stagger lives on `:hover`, and that is load-bearing.** A fade from
+`opacity: 0` under a `both` fill pins the element at 0 whenever the animation fails
+to advance — the backwards fill applies during the delay regardless of whether time
+is running. This was first written as a load-time animation driven by
+`primeBrandFlourish()` and it was wrong: measured in a backgrounded tab, where
+`currentTime` stays at `-1`, every letter sat at opacity 0 — **an empty accent box
+where the logo should be**. On page content that is an unflushed animation; on a
+sticky topbar logo it reads as a broken site. Scoping it to `:hover` removes the
+hazard rather than gating it: no animation means no fill, and a stalled one leaves
+a static letter rather than a blank box. `primeBrandFlourish()` is deleted.
+
+Reduced motion keeps the reveal and drops the interpolation — the global override
+flattens the transition, so the box snaps open and shut. Suppressing the reveal
+outright would make the name unreachable to anyone who only has hover to reveal it.
+The `:active` translate is pinned back to rest, since a press with no shadow is
+just a box that jumped.
+
+Each letter is its own span because the stagger needs boxes to animate. There is no
+base `opacity: 0`, so the resting state is legible before anything is hovered.
 
 **Type is 15px, down from the 20px the standalone wordmark used.** Four characters
 cannot be 20px inside a topbar-height box, and Righteous thins quickly at small
