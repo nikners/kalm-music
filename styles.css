@@ -256,32 +256,10 @@ img { display: block; max-width: 100%; }
   position: sticky; top: 0; z-index: 20;
 }
 
-/* Brand sits inline with navigation now, so it needs no stacking of its own.
-
-   The width is RESERVED, not intrinsic, and that is load-bearing. `.brand` is a
-   flex item in the topbar row with `flex: none`, so an element that grows on hover
-   displaces everything after it. Measured before this was fixed: opening the logo
-   moved the entire nav 23px to the right, because .topbar-search is pinned by
-   margin-left:auto and could not absorb it. Hovering the logo visibly shoved the
-   navigation sideways, which reads as a broken layout rather than a flourish.
-
-   Reserving the full 55px means the footprint is constant from first paint, so the
-   reveal happens inside space that was always there and no sibling ever moves. The
-   collapsed box is centred in that slot by margin:auto on .brand-mark, which splits
-   the leftover space evenly instead of dumping it all on the right. */
+/* Brand sits inline with navigation now, so it needs no stacking of its own. */
 .brand {
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center;
   flex: none;
-  /* Measured open width of the box. 55 = 44px of "Kalm" advance plus 11px of
-     padding on each side, so this is exact rather than rounded up. */
-  width: 55px;
-  /* Zeroed because the button's inherited padding silently ate the slot. Measured
-     while debugging: .brand was padding 6px left and right, so its content box
-     was 43px rather than 55, the trailing "m" was clipped by 1px, and margin:0
-     auto computed to 0px because there was no free space left to distribute - so
-     the box was not centring either. Harmless while .brand held a 27px tile and
-     fatal the moment the slot had to be exact. */
-  padding: 0;
   color: var(--ink-strong);
   /* The focus ring belongs to the button rather than the box, because the box
      translates on press and a ring drawn on it would travel with it. */
@@ -292,7 +270,14 @@ img { display: block; max-width: 100%; }
   outline-offset: 2px;
 }
 
-/* The whole name in one box, and pressable.
+/* The whole name in one box, and pressable. The box sizes to its content - there
+   is no reserved slot and no width animation. The reveal is handled in JS
+   (brandTypewriter in app.js): the mark starts at "K" and types "Kalm" one
+   character at a time on hover, collapsing back to "K" on mouse leave. That
+   replaces every CSS-width approach tried so far, all of which had a failure
+   mode: flexbox min-width:auto blocked the collapse, max-width transitions on
+   flex containers stalled, and growing a box under a stationary pointer dropped
+   :hover and snapped it shut.
 
    The press is the point rather than decoration. Hard offset shadows already
    read as pressable on shelf art, cards and the toast, and the brand was the
@@ -307,45 +292,11 @@ img { display: block; max-width: 100%; }
 
    Font size is 15px, down from the 20px the old standalone wordmark used. Four
    characters inside a topbar-height box cannot be 20px, and Righteous is a
-   decorative face that thins out quickly - if this reads light in the specimen
-   pass, 14px is the next move and not a redesign. */
-/* COLLAPSED BY DEFAULT. The box rests at "K" and grows to "Kalm" on hover.
-
-   Measured widths: 31px collapsed, 55px expanded, so the growth is 24px and the
-   collapsed state is still 4px wider than the 27px tile that came before it. The
-   reveal replaces a breakpoint rather than needing one, so the max-width:720px
-   rule that hid the wordmark is gone.
-
-   Why max-width and not width: the letters are inline-block of natural width,
-   and animating to `auto` is not a thing CSS can do. max-width to a measured
-   value is the only way to interpolate toward content-driven width, and
-   overflow:hidden is what actually clips the tail letters while it is closed.
-
-   The width animates INSIDE a fixed 55px slot reserved by .brand, so the topbar
-   never reflows. Before that, hovering the logo pushed the whole navigation 23px
-   sideways - see the note on .brand above.
-
-   Why hover does NOT press: hover reveals, :active presses. Both on one trigger
-   meant an expanding box lurching down-right at the same time, which reads as a
-   glitch rather than a gesture. Splitting them keeps the press legible after the
-   name has appeared.
-
-   Growing rightward is not safe either: a box that widens under a stationary
-   pointer can lose the pointer, which drops :hover and snaps it shut. Measured -
-   the width walked 55 -> 49 -> 34 -> 31px and collapsed again. Centring in the
-   reserved slot keeps the pointer inside the box throughout, so it opens once and
-   holds. */
+   decorative face that thins out quickly - if this reads light, 14px is the next
+   move and not a redesign. */
 .brand-mark {
-  display: flex; align-items: center;
+  display: inline-block;
   padding: 6px 11px;
-  /* Measured, not guessed: K alone is 9.2px of advance, plus 22px of padding.
-     The 1px over is so subpixel rounding cannot shave the stem off the K. */
-  width: 32px;
-  overflow: hidden;
-  white-space: nowrap;
-  /* Flush left, matching the original tile's position. Centring looked like
-     dead space around a small logo, not a collapsed state. */
-  margin: 0;
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-display);
@@ -355,59 +306,10 @@ img { display: block; max-width: 100%; }
   letter-spacing: -0.01em;
   border-radius: 3px;
   box-shadow: 2px 2px 0 rgba(74, 42, 20, 0.85);
-  transition: max-width var(--dur) var(--ease-spring),
-              transform var(--dur-fast) var(--ease-spring),
+  transition: transform var(--dur-fast) var(--ease-spring),
               box-shadow var(--dur-fast) var(--ease-spring);
 }
-.brand:hover .brand-mark { width: 56px; }
-
-/* Touch has no hover, so a collapsed default would leave the name permanently
-   unreachable there. Only collapse where a pointer can bring it back. This
-   browser reports both hover:hover and pointer:fine, so desktop is unaffected -
-   it exists so a phone is not stuck at "K" forever. */
-@media (hover: none) {
-  .brand-mark { width: 56px; }
-}
-
-/* The press, kept on :active only. Shadow offset is 2px rather than --shadow's
-   3px because .topbar has a 1px border-bottom immediately underneath. */
 .brand:active .brand-mark { transform: translate(3px, 3px); box-shadow: 0 0 0 rgba(74, 42, 20, 0); }
-
-/* One box per letter, so the reveal can stagger them. inline-block is safe here
-   even though it is banned for the album title: four fixed short words in a
-   shrink-to-fit box cannot wrap, so there is nothing to shred. */
-.brand-l {
-  display: inline-block;
-  /* min-width: auto is the default for flex items and prevents them from
-     shrinking below their content size. Without this, the tail letters refuse
-     to be clipped by the 32px width and the box shows "Kalm" at rest. */
-  min-width: 0;
-}
-
-/* Indexed here rather than inline on the span, so the markup stays free of
-   presentation. */
-.brand-l:nth-child(1) { --i: 0; }
-.brand-l:nth-child(2) { --i: 1; }
-.brand-l:nth-child(3) { --i: 2; }
-.brand-l:nth-child(4) { --i: 3; }
-
-/* The tail letters fade in as the box opens.
-
-   This animation is on :hover rather than applied by JS at load, and that
-   difference matters. A `both` fill on a load-time fade pins the element at
-   opacity 0 whenever the animation fails to advance - measured in a
-   backgrounded tab, where currentTime stays at -1, every letter sat at 0: an
-   empty box where the logo should be. Here the animation exists only while a
-   pointer is over the button, and no animation at all means no fill and no
-   clipping problem. If it stalls you get a static letter, not a blank box.
-
-   No base opacity:0 for the same reason - the resting state must be legible
-   before anything is hovered. */
-.brand:hover .brand-l:nth-child(n+2) {
-  animation: brandLtr var(--dur) var(--ease-soft) both;
-  animation-delay: calc(45ms * var(--i));
-}
-@keyframes brandLtr { from { opacity: 0; } to { opacity: 1; } }
 
 /* Three peer destinations read as peer tabs. The active tab's underline lands on
    the topbar's own bottom border, which is what distinguishes this from the

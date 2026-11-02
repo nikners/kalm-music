@@ -58,7 +58,7 @@ matter rather than a dashboard.
 - **Layout:** a single sticky topbar carrying brand, four navigation tabs and
   search. There is no sidebar; the 232px it occupied went
   back to the album grid. Labels collapse to icons below 940px. The brand is one
-  box holding the whole name, resting at `K` and opening to `Kalm` on hover
+  box holding the whole name, resting at `K` and typing `Kalm` on hover
 - **Corners:** retro shape — controls are pills (`--radius-control: 999px`) and
   album artwork is square (`--radius-art: 0`), because 70s sleeves were square
   and the controls around them were not. Circles stay circles: a circular arrow
@@ -235,53 +235,30 @@ load. Deezer's CDN is reliable and its metadata is richer.
 ### The brand
 
 The logo is one box holding the whole name: a 27×27 accent tile with a `K` beside
-a separate 20px `kalm` wordmark became a single box, and the topbar gained room
-rather than losing it. It is square-cornered at 3px, which is the record-label tile
-read and deliberately *not* `--radius-control` — a pill containing a wordmark reads
-as a button, and this one already is one.
+a separate 20px `kalm` wordmark became a single box. It is square-cornered at 3px,
+which is the record-label tile read and deliberately *not* `--radius-control` — a
+pill containing a wordmark reads as a button, and this one already is one.
 
-**It rests collapsed at `K` and opens to `Kalm` on hover.** Measured 31px → 55px, so
-the growth is 24px and the resting state is still wider than the 27px tile it
-replaced. This is why there is **no breakpoint**: an earlier version dropped to `K`
-below 720px and it never fired, because the viewport was 800px. Rather than move
-the number, the collapsed state became the default, which deletes the special case
-entirely — there is nothing left for a media query to say that the box does not
-already do at every width.
+**It rests at `K` and types `Kalm` on hover.** The mark starts at "K" and types
+"alm" one character at a time (70ms per character), collapsing back to "K" on mouse
+leave. This replaces every CSS-width approach tried so far — flexbox `min-width:auto`
+blocked the collapse, `max-width` transitions on flex containers stalled, and
+growing a box under a stationary pointer dropped `:hover` and snapped it shut. A
+JS-driven `textContent` change has none of those failure modes: the box sizes to
+its content, the nav shifts by the width of the appearing letters over ~200ms
+(gradual, not a jump), and there is no CSS animation to stall in a backgrounded
+tab.
 
-`max-width` rather than `width`, because the letters are inline-block of natural
-width and CSS cannot interpolate toward `auto`. `overflow: hidden` is what actually
-clips the tail while closed. The 32px resting value is 9.2px of `K` plus 22px of
-padding, with 1px of slack so subpixel rounding cannot shave the stem.
+The typewriter is consistent with the album-title typewriter already in the
+codebase, so the motion language is the same everywhere.
 
-**Hover reveals, `:active` presses.** They were originally both on `:hover`, which
-produced an expanding box lurching down-right simultaneously — a glitch, not a
-gesture. Split by trigger, each reads as itself: the name arrives, then the box
-sinks under the pointer. The press offset is 2px rather than `--shadow`'s 3px
-because `.topbar` has a `1px` border-bottom immediately underneath.
+**Hover reveals, `:active` presses.** The press is on `:active` only, not `:hover`,
+so the two gestures don't fight. The press offset is 2px rather than `--shadow`'s
+3px because `.topbar` has a `1px` border-bottom immediately underneath.
 
-**Touch never collapses.** `@media not all and (hover: hover)` opens the box
-permanently where there is no hover to reopen it, since a phone would otherwise be
-stuck at `K` forever. Desktop browsers report `hover: hover` and are unaffected.
-
-**The letter stagger lives on `:hover`, and that is load-bearing.** A fade from
-`opacity: 0` under a `both` fill pins the element at 0 whenever the animation fails
-to advance — the backwards fill applies during the delay regardless of whether time
-is running. This was first written as a load-time animation driven by
-`primeBrandFlourish()` and it was wrong: measured in a backgrounded tab, where
-`currentTime` stays at `-1`, every letter sat at opacity 0 — **an empty accent box
-where the logo should be**. On page content that is an unflushed animation; on a
-sticky topbar logo it reads as a broken site. Scoping it to `:hover` removes the
-hazard rather than gating it: no animation means no fill, and a stalled one leaves
-a static letter rather than a blank box. `primeBrandFlourish()` is deleted.
-
-Reduced motion keeps the reveal and drops the interpolation — the global override
-flattens the transition, so the box snaps open and shut. Suppressing the reveal
-outright would make the name unreachable to anyone who only has hover to reveal it.
-The `:active` translate is pinned back to rest, since a press with no shadow is
-just a box that jumped.
-
-Each letter is its own span because the stagger needs boxes to animate. There is no
-base `opacity: 0`, so the resting state is legible before anything is hovered.
+**Touch devices and reduced motion.** On touch (`hover: none`), always show the full
+"Kalm" — there's no hover to reveal it. Under reduced motion, show the full name
+immediately on hover rather than typing.
 
 **Type is 15px, down from the 20px the standalone wordmark used.** Four characters
 cannot be 20px inside a topbar-height box, and Righteous thins quickly at small

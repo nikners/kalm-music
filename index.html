@@ -34,13 +34,16 @@
            name. Without it a screen reader announces K, a, l and m as four
            separate items.
 
-           One span per letter, rather than a single text node, for two reasons:
-           the stagger needs per-letter boxes to animate, and the narrow-screen
-           fallback is then just .brand-l:nth-child(n+2) { display: none }. A
-           ::after content swap would have been tidier for the text, but it puts
-           the wordmark somewhere the animation cannot reach it. -->
+           Single text node rather than one span per letter. The reveal is driven
+           from JS now (brandTypewriter in app.js), so the per-letter boxes and
+           the narrow-screen :nth-child fallback are no longer needed. The
+           accessible name comes from the button's aria-label. -->
+      <!-- The mark starts at "K" and types "Kalm" on hover (see brandTypewriter
+           in app.js). aria-hidden because the button's own aria-label already
+           carries the name; without it a screen reader would announce K, a, l
+           and m as four separate items. -->
       <button class="brand" id="brandHome" aria-label="Kalm — go to Discover">
-        <span class="brand-mark" aria-hidden="true"><span class="brand-l">K</span><span class="brand-l">a</span><span class="brand-l">l</span><span class="brand-l">m</span></span>
+        <span class="brand-mark" aria-hidden="true">K</span>
       </button>
 
       <!-- Four peer destinations, so they read as peer tabs. Replaces the

@@ -1544,6 +1544,50 @@ document.addEventListener('click', e => {
   if (albumTarget) openAlbum(albumTarget.dataset.album);
 });
 
+/* ------------------------------------------------------------ brand typewriter
+
+   The brand mark rests at "K" and types "Kalm" one character at a time on hover,
+   collapsing back to "K" on mouse leave. This replaces the CSS width-animation
+   approach, which had three failure modes: flexbox min-width:auto blocked the
+   collapse, max-width transitions on flex containers stalled, and growing a box
+   under a stationary pointer dropped :hover and snapped it shut.
+
+   A JS-driven textContent change has none of those problems: the box simply
+   sizes to its content, the nav shifts by the width of the appearing letters
+   over ~200ms (gradual, not a jump), and there is no CSS animation to stall in
+   a backgrounded tab.
+
+   Touch devices and reduced motion: on touch, always show the full "Kalm" (no
+   hover to reveal it); under reduced motion, show it immediately on hover. */
+(function initBrandTypewriter(){
+  const brand = document.getElementById('brandHome');
+  const mark = brand ? brand.querySelector('.brand-mark') : null;
+  if (!brand || !mark) return;
+  const full = 'Kalm';
+  const supportsHover = window.matchMedia('(hover: hover)').matches;
+  if (!supportsHover) { mark.textContent = full; return; }
+  mark.textContent = 'K';
+  let timer = null;
+  const show = () => {
+    clearTimeout(timer);
+    if (reducedMotion.matches) { mark.textContent = full; return; }
+    mark.textContent = 'K';
+    let i = 1;
+    const tick = () => {
+      if (i >= full.length) return;
+      mark.textContent = full.slice(0, i + 1);
+      i += 1;
+      timer = setTimeout(tick, 70);
+    };
+    timer = setTimeout(tick, 70);
+  };
+  const hide = () => { clearTimeout(timer); mark.textContent = 'K'; };
+  brand.addEventListener('mouseenter', show);
+  brand.addEventListener('mouseleave', hide);
+  brand.addEventListener('focus', show);
+  brand.addEventListener('blur', hide);
+})();
+
 /* --------------------------------------------------------------- help panel */
 const helpDialog = $('#helpDialog');
 
