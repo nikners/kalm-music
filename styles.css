@@ -340,11 +340,12 @@ img { display: block; max-width: 100%; }
   padding: 6px 11px;
   /* Measured, not guessed: K alone is 9.2px of advance, plus 22px of padding.
      The 1px over is so subpixel rounding cannot shave the stem off the K. */
-  max-width: 32px;
+  width: 32px;
   overflow: hidden;
-  /* Centred in the 55px slot .brand reserves, so the collapsed box sits in the
-     middle of its own space instead of hard against the left edge. */
-  margin: 0 auto;
+  white-space: nowrap;
+  /* Flush left, matching the original tile's position. Centring looked like
+     dead space around a small logo, not a collapsed state. */
+  margin: 0;
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-display);
@@ -358,14 +359,14 @@ img { display: block; max-width: 100%; }
               transform var(--dur-fast) var(--ease-spring),
               box-shadow var(--dur-fast) var(--ease-spring);
 }
-.brand:hover .brand-mark { max-width: 56px; }
+.brand:hover .brand-mark { width: 56px; }
 
 /* Touch has no hover, so a collapsed default would leave the name permanently
    unreachable there. Only collapse where a pointer can bring it back. This
    browser reports both hover:hover and pointer:fine, so desktop is unaffected -
    it exists so a phone is not stuck at "K" forever. */
-@media not all and (hover: hover) {
-  .brand-mark { max-width: 56px; }
+@media (hover: none) {
+  .brand-mark { width: 56px; }
 }
 
 /* The press, kept on :active only. Shadow offset is 2px rather than --shadow's
@@ -377,6 +378,10 @@ img { display: block; max-width: 100%; }
    shrink-to-fit box cannot wrap, so there is nothing to shred. */
 .brand-l {
   display: inline-block;
+  /* min-width: auto is the default for flex items and prevents them from
+     shrinking below their content size. Without this, the tail letters refuse
+     to be clipped by the 32px width and the box shows "Kalm" at rest. */
+  min-width: 0;
 }
 
 /* Indexed here rather than inline on the span, so the markup stays free of
