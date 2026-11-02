@@ -476,6 +476,7 @@ function stepShelves(now){
 }
 
 function shelfDriffLoop(now){
+  if (reducedMotion.matches) return;
   shelfDriftFrame = window.requestAnimationFrame(shelfDriffLoop);
   if (now - shelfDriftLast < SHELF_DRIFT_FRAME_MS) return;
   // Only the drifting shelves have their snap touched. The static artist row is
