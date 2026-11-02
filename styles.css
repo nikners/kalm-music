@@ -22,22 +22,23 @@
    measured 3.76:1 on --surface-2, and .result-row:hover paints that surface
    underneath accent-coloured type. */
 :root {
-  --bg: #f7f2e4;
-  --surface: #fdfaf0;
-  --surface-2: #f1ebd9;
-  --surface-3: #e7e0cb;
-  --surface-4: #dcd4bc;
-  --ink: #4a4238;
-  --ink-strong: #2a2520;
-  --muted: #6b6154;
+  --bg: #F3EEE7;
+  --surface: #FDF8F0;
+  --surface-2: #FDF8F0;
+  --surface-3: #E5D6BC;
+  --surface-4: #DCD4BC;
+  --ink: #414141;
+  --ink-strong: #283F7D;
+  --muted: #5B5B5B;
   /* --faint carries every micro-label, so it must clear 4.5:1 on --bg AND on
      every surface above it, not just the page. It is the binding constraint in
      the palette's own mid-greys do not clear it. */
   --faint: #716961;
-  --line: #d6cdb4;
+  --line: #9C9C9C;
   /* Solved, not the palette's #68BA7F: see the header note. */
-  --accent: #a1390c;
-  --accent-ink: #f7f2e4;
+  --accent: #EC633D;
+  --accent-ink: #283F7D;
+  --accent-alt: #3B60C5;
   /* Retro sunset supplies two more colours, but they are FILLS and never text:
      mustard fails on a light ground at 1.33:1, and the palette's teal carries
      neither light nor dark text (4.10 and 3.55). Darkened 20% teal takes the
@@ -48,11 +49,11 @@
   /* Glyphs that sit on a near-black scrim — play button, close, toast. These
      cannot follow --ink-strong, which is dark here and would
      vanish against a black overlay. */
-  --on-scrim: #fdfaf0;
+  --on-scrim: #FDF8F0;
   /* Hard shadows, zero blur. This is the single strongest retro signal, and it
      costs nothing in layout - a blurred shadow was purely decorative while an
      offset one reads as a solid printed shape. */
-  --shadow: 3px 3px 0 rgba(74, 42, 20, 0.85);
+  --shadow: 4px 4px 0 rgba(40, 63, 125, 0.15);
   --shadow-lift: 6px 6px 0 var(--accent);
   /* Page texture is a ruled grid rather than film grain. A catalogue of
      records is a grid of things, and ruling reads as index; noise read as
@@ -60,15 +61,15 @@
      layers that were the most expensive thing in the app. */
   --grid-size: 26px;
   --grid-line: rgba(74, 42, 20, 0.085);
-  --ease: cubic-bezier(0.22, 0.61, 0.24, 1);
-  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-soft: cubic-bezier(0.23, 1, 0.32, 1);
   /* Overshoots past its target and settles back. Used for anything that
      arrives rather than departs — lifts, reveals, the cover dialog. Not used
      for the vinyl slide, which should stay linear-feeling and predictable. */
-  --ease-spring: cubic-bezier(0.275, 0.6, 0.16, 1.24);
-  --dur: 0.32s;
-  --dur-fast: 0.18s;
-  --dur-spring: 0.62s;
+  --ease-spring: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur: 0.28s;
+  --dur-fast: 0.14s;
+  --dur-spring: 0.32s;
   /* Letter-spacing was eight values between 0.04em and 0.14em, which read as
      over-tracked signage rather than as labels. Three tiers now. Eyebrows stay
      wide because at 10px anything tighter sets solid. */
@@ -91,7 +92,7 @@
      would synthesise a fake oblique. Only 400/500/600 are requested: the
      stylesheet uses 600 nineteen times, 500 and 400 once each, and nothing
      uses 300 or 700. */
-  --display-weight: 400;
+  --display-weight: 600;
   /* Righteous for display, Figtree for body. Righteous is a groovy rounded
      face, which is the retro register, and it is METRICALLY IDENTICAL to the
      Figtree it replaces: measured at 1.01x on both the 42px hero case and the
@@ -102,8 +103,8 @@
      That is why --display-weight exists: asking for 600 would be synthesised
      faux bold. Figtree stays in the stack as a fallback so a failed load lands
      on real 600 rather than a fake one. */
-  --font-display: 'Righteous', 'Figtree', system-ui, sans-serif;
-  --font-body: 'Figtree', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'Azeret Mono', 'Courier New', monospace;
   /* One token because the mono labels are a single role at a single weight.
      Space Mono shipped only 400 and 700, which forced this to 700 and made the
