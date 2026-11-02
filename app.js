@@ -310,9 +310,10 @@ function renderDiscover(){
     : '';
   // Bento spans: every third tile (0, 3, 6, ...) is wide; the rest are normal.
   // Classes are additive - .album-card and its content markup are untouched.
+  const canWide = grid.querySelectorAll('.album-card').length % 3 === 0;
   grid.querySelectorAll('.album-card').forEach((card, i) => {
     card.classList.add('bento-tile');
-    if (i % 3 === 0) card.classList.add('bento-wide');
+    if (canWide && i % 3 === 0) card.classList.add('bento-wide');
   });
   stagger(grid);
   revealArt(grid);
