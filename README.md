@@ -46,12 +46,9 @@ server's HTML error page. Anything else falls through to the static handler.
 An album-art-first catalog with a vintage analogue feel — typed like printed
 matter rather than a dashboard.
 
-- **The Index is the front door.** A feed asks you to scroll; a catalogue lets
-  you look something up. Index is a finite, text-first list ordered by title,
-  each row a catalogue number, a 44px thumbnail, title, artist, year and format.
-  It is seeded from the discover payload plus every album this browser has saved
-  or opened, so it grows with use and needs no server support. `Browse` is the
-  old Discover page — carousels and all — one tab in
+- **Browse is the front door.** The catalogue's old A-Z Index has been retired
+  — it read as a separate page rather than the catalogue. Browse now leads:
+  carousels and all, with the search field and the four navigation tabs on one row
 - **Catalogue numbers** are `KALM` plus the Deezer album id, derived rather
   than stored: no migration, identical for every reader, and a saved record
   keeps its number permanently
