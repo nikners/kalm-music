@@ -471,6 +471,17 @@ img { display: block; max-width: 100%; }
 
 /* ============================================================== card grids */
 .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 24px 18px; }
+
+/* Discover view as a bento grid. Only affects #recentAlbums (which carries
+   .discover-bento); .album-grid alone (collection view) is untouched. */
+.discover-bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+.discover-bento .bento-tile { min-width: 0; }
+.discover-bento .bento-wide { grid-column: span 6; }
+.discover-bento .bento-tile:not(.bento-wide) { grid-column: span 3; }
 /* A <button> now, so it has to lay out as a block card again. */
 .album-card {
   display: block;
@@ -1177,6 +1188,9 @@ img.art-pending.is-loaded { opacity: 1; }
   .nav-label { display: none; }
   .nav-tab { padding: 7px 9px 9px; }
   .nav-tab.active::after { left: 9px; right: 9px; }
+  .discover-bento { grid-template-columns: repeat(8, 1fr); }
+  .discover-bento .bento-wide { grid-column: span 4; }
+  .discover-bento .bento-tile:not(.bento-wide) { grid-column: span 4; }
 }
 
 @media (max-width: 1000px) {
@@ -1203,6 +1217,8 @@ img.art-pending.is-loaded { opacity: 1; }
   .artist-hero > .artist-photo, .artist-hero > .art-placeholder { width: 140px; }
   .topbar-search kbd { display: none; }
   .album-grid { grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); gap: 20px 14px; }
+  .discover-bento { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .discover-bento .bento-tile { grid-column: span 4; }
   .disco-grid { grid-template-columns: repeat(auto-fill, minmax(142px, 1fr)); }
   .page { padding: 18px 16px 60px; }
   .result-row { grid-template-columns: 44px minmax(0, 1fr); }

@@ -308,6 +308,12 @@ function renderDiscover(){
   grid.innerHTML = ids.length
     ? cardsFor(albums) + missing.map(id => missingCard(id)).join('')
     : '';
+  // Bento spans: every third tile (0, 3, 6, ...) is wide; the rest are normal.
+  // Classes are additive - .album-card and its content markup are untouched.
+  grid.querySelectorAll('.album-card').forEach((card, i) => {
+    card.classList.add('bento-tile');
+    if (i % 3 === 0) card.classList.add('bento-wide');
+  });
   stagger(grid);
   revealArt(grid);
   if (missing.length) resolveMissingAlbums(missing, 'recent');
