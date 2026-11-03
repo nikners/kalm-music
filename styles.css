@@ -488,7 +488,7 @@ img { display: block; max-width: 100%; }
   display: block;
   width: 100%;
   min-width: 0;
-  padding: 0;
+  padding: 12px;
   text-align: left;
   cursor: pointer;
   border: 2px solid var(--line);
@@ -497,7 +497,7 @@ img { display: block; max-width: 100%; }
 .album-card .album-art {
   width: 100%; aspect-ratio: 1; object-fit: cover;
   border-radius: var(--radius-art);
-  border: 2px solid var(--line);
+  border: 0;
   background: var(--surface-2);
   box-shadow: var(--shadow);
   transition: transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
