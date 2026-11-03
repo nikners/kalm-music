@@ -455,7 +455,7 @@ img { display: block; max-width: 100%; }
 
 .inline-link { color: inherit; font: inherit; padding: 0; text-align: left; }
 .inline-link:hover { color: var(--accent); }
-.inline-link.strong { color: var(--accent); font-family: var(--font-display); font-weight: var(--display-weight); font-size: 16px; }
+.inline-link.strong { color: var(--accent-alt); font-family: var(--font-display); font-weight: var(--display-weight); font-size: 16px; }
 
 /* ========================================================== artist banner */
 .artist-banner {
@@ -714,6 +714,7 @@ img { display: block; max-width: 100%; }
 .album-title {
   margin: 7px 0 5px;
   font-size: clamp(28px, 4vw, 42px);
+  font-family: var(--font-display);
   font-weight: var(--display-weight);
   color: var(--ink-strong);
   letter-spacing: -0.025em;
@@ -777,7 +778,7 @@ img { display: block; max-width: 100%; }
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 400;
-  color: var(--accent);
+  color: var(--accent-alt);
   transition: opacity var(--dur-fast) var(--ease-soft);
 }
 .album-artist:hover { opacity: 0.78; text-decoration: underline; text-underline-offset: 4px; }
@@ -846,7 +847,10 @@ img { display: block; max-width: 100%; }
 .album-body section + section { margin-top: 36px; }
 .album-body h2 { margin: 0 0 14px; font-size: 21px; font-weight: var(--display-weight); color: var(--ink-strong); }
 
-.track-list { border-top: 1px solid var(--line); }
+.track-list {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
 .track {
   display: grid; grid-template-columns: 38px minmax(0, 1fr) 240px; gap: 12px;
   padding: 8px 6px;
@@ -859,7 +863,12 @@ img { display: block; max-width: 100%; }
 .track-name { color: var(--ink-strong); }
 .track-credit { color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.credits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
+.credits-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 14px 16px;
+}
 .credit-group h3 { margin: 0 0 8px; font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; text-transform: uppercase; letter-spacing: var(--track-wide); color: var(--faint); }
 .credit-group p { margin: 0 0 5px; font-size: 13.5px; color: var(--ink-strong); }
 
