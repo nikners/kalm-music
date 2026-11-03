@@ -1084,7 +1084,7 @@ img { display: block; max-width: 100%; }
   border: 2px solid var(--accent-alt);
   border-radius: 2px;
   background: transparent;
-  color: var(--accent-alt);
+  color: var(--ink-strong);
   font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: var(--mono-weight);
