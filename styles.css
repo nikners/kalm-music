@@ -252,7 +252,7 @@ img { display: block; max-width: 100%; }
 .topbar {
   display: flex; align-items: center; gap: 18px;
   padding: 10px 24px;
-  background: var(--surface);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 20;
 }
@@ -299,7 +299,7 @@ img { display: block; max-width: 100%; }
   display: inline-block;
   padding: 6px 11px;
   background: var(--accent);
-  color: var(--accent-ink);
+  color: var(--ink-strong);
   font-family: var(--font-display);
   font-weight: var(--display-weight);
   font-size: 15px;
@@ -326,7 +326,7 @@ img { display: block; max-width: 100%; }
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease-soft), background-color var(--dur-fast) var(--ease-soft);
 }
-.nav-tab:hover { color: var(--ink-strong); background: var(--surface-2); }
+.nav-tab:hover { color: var(--accent-alt); background: var(--surface-2); }
 .nav-tab.active { color: var(--ink-strong); }
 .nav-tab.active::after {
   content: '';
@@ -346,9 +346,9 @@ img { display: block; max-width: 100%; }
 }
 .topbar-search input {
   width: 100%;
-  background: var(--bg);
-  border: 2px solid var(--line);
-  border-radius: var(--radius-surface);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 8px 40px 8px 32px;
   font-family: var(--font-body);
   font-size: 14px;
