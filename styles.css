@@ -514,6 +514,32 @@ img { display: block; max-width: 100%; }
 .album-meta span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .album-card.is-loading .album-meta strong { color: var(--faint); }
 
+/* ---- discover card treatment --------------------------------------------
+   Scoped to .discover-bento on purpose: .album-card is shared with the
+   collection view, which this change must leave alone. The frame moves from
+   the artwork to the card, so the artwork inside carries no border or shadow
+   of its own - otherwise the two frames would stack. */
+.discover-bento .album-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: transform var(--dur-spring) var(--ease-spring),
+              border-color var(--dur-fast) var(--ease-soft),
+              box-shadow var(--dur) var(--ease);
+}
+.discover-bento .album-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+}
+/* Square corners, no frame of its own inside the card's frame. */
+.discover-bento .album-card .album-art {
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+/* The card lifts, not the artwork, so the two cannot move at once. */
+.discover-bento .album-card:hover .album-art { transform: none; box-shadow: none; }
+
 .art-placeholder {
   display: grid; place-items: center;
   background: linear-gradient(145deg, var(--surface-2), var(--surface-3));
