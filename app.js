@@ -428,9 +428,7 @@ function renderShelves(rows){
    Only the album and track rows drift. "Artists to know" is a ranked chart with
    No. 1 / No. 2 labels and stays put, moved with the arrows, because a ranked
    list reads as something to consult rather than a feed to browse. */
-const SHELF_DRIFT_SPEEDS = { album: 18, track: 22 };   // px per second, by kind
-const SHELF_DRIFT_FRAME_MS = 50;           // dt clamp, so a backgrounded tab
-                                           // does not resume with a huge jump
+const SHELF_DRIFT_SPEEDS = { album: 45, track: 55 };   // px per second, by kind
 let shelfDriftFrame = null;
 let shelfDriftLast = 0;
 
@@ -463,7 +461,11 @@ function shelvesIdle(){
 function stepShelves(now){
   const shelves = driftingShelves();
   if (!shelves.length) return;
-  const dt = Math.min(SHELF_DRIFT_FRAME_MS, now - shelfDriftLast) / 1000;
+  // Pure deltaTime: the same distance per millisecond on 60Hz, 144Hz or any
+  // other rate. The 50ms value is now a per-frame ceiling rather than a tick
+  // gate, so it still stops a backgrounded tab resuming with a huge jump but
+  // no longer quantises the drift to a 20fps grid.
+  const dt = Math.min(50, now - shelfDriftLast) / 1000;
   shelfDriftLast = now;
 
   shelves.forEach(shelf => {
@@ -485,7 +487,6 @@ function stepShelves(now){
 function shelfDriffLoop(now){
   if (reducedMotion.matches) return;
   shelfDriftFrame = window.requestAnimationFrame(shelfDriffLoop);
-  if (now - shelfDriftLast < SHELF_DRIFT_FRAME_MS) return;
   // Only the drifting shelves have their snap touched. The static artist row is
   // never suspended, so its arrows keep snapping normally at all times.
   if (!shelvesIdle()) {
@@ -553,6 +554,31 @@ $('#discoverRows').addEventListener('scroll', e => {
   // of why the shelves looked dead.
 }, true);
 
+/* Discover fallback. When /api/discover is unreachable or comes back empty,
+   degrade to a hardcoded pool of Deezer artist IDs for the era the shelves are
+   curated around - 70s/80s progressive rock, classic rock, progressive pop -
+   rather than to empty shelves. Names ship with the IDs so the cards render
+   without a round trip; artwork is deliberately left empty so artHtml() shows
+   the placeholder tile and the real photo loads when the artist page opens.
+   IDs resolved against the Deezer API. */
+const DISCOVER_FALLBACK_ARTISTS = [
+  { id: '860', name: 'Pink Floyd' },
+  { id: '1994', name: 'King Crimson' },
+  { id: '2711', name: 'Yes' },
+  { id: '3037', name: 'Genesis' },
+  { id: '8686', name: 'Rush' },
+  { id: '848', name: 'Led Zeppelin' },
+  { id: '847', name: 'The Doors' },
+];
+
+function fallbackDiscoverRows(){
+  return [{
+    title: 'Artists to know',
+    kind: 'artist',
+    items: DISCOVER_FALLBACK_ARTISTS.map(a => ({ id: a.id, name: a.name, image: '' })),
+  }];
+}
+
 async function loadShelves(){
   const host = $('#discoverRows');
   host.innerHTML = '<div class="shelf-skeleton"></div><div class="shelf-skeleton" style="margin-top:16px"></div>';
@@ -560,10 +586,15 @@ async function loadShelves(){
     const response = await fetch('/api/discover');
     const data = await response.json();
     state.discoverRows = data.rows || [];
-    renderShelves(state.discoverRows);
   } catch (error) {
-    host.innerHTML = '';
+    state.discoverRows = [];
   }
+  // A failed or empty feed degrades to the curated artist fallback rather
+  // than to empty shelves.
+  if (!state.discoverRows.length) {
+    state.discoverRows = fallbackDiscoverRows();
+  }
+  renderShelves(state.discoverRows);
 }
 
 /* ---------------------------------------------------------------- search */
@@ -1465,9 +1496,9 @@ document.addEventListener('click', e => {
       if (i >= full.length) return;
       mark.textContent = full.slice(0, i + 1);
       i += 1;
-      timer = setTimeout(tick, 70);
+      timer = setTimeout(tick, 50);
     };
-    timer = setTimeout(tick, 70);
+    timer = setTimeout(tick, 50);
   };
   const hide = () => { clearTimeout(timer); mark.textContent = 'K'; };
   brand.addEventListener('mouseenter', show);

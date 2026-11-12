@@ -1,44 +1,39 @@
 /* ============================================================== Kalm tokens
-   One theme: "retro sunset". Burnt orange, mustard, teal, dark rust, over a
-   warm cream ground.
+   One theme: "clean editorial". Off-white ground, white surfaces, soft grey
+   borders, one blue accent, blurred offset-free shadows, gentle radii.
 
-   Two of the four swatches are FILLS and never text, which is a measurement
-   rather than a preference. Mustard is 1.33:1 on a light ground, and the
-   palette's teal carries neither light nor dark text (4.10 and 3.55). They
-   become --fill-mustard and --fill-teal, teal darkened 20%, and they take
-   opposite text colours: dark ink on mustard at 10.19:1, cream on teal at
-   4.67:1. Of the six swatch-against-swatch pairs, four fail AA outright
-   (burnt orange on teal is 1.30) - which is what a palette of sibling colour
-   blocks looks like from the inside, and why it cannot drive the theme itself.
+   Text pairs: --ink, --ink-strong and --muted clear WCAG AA on every surface
+   text sits on (--bg, --surface, --surface-2; tightest is --muted on
+   --surface-2 at 5.04:1). --faint (#999999) does not clear AA (2.50:1 on
+   --surface-2, 2.85:1 on --surface) and is confined by convention to the
+   10.5px micro-labels; anything that must be read uses --muted or darker.
+   --accent #2563EB is 4.95:1 on --bg and 5.17:1 on --surface, and white on
+   it is 5.17:1.
 
-   All 16 text/background pairs clear WCAG AA, tightest 4.52 (--faint on
-   --surface-2). Those 16 are checked against the surfaces text actually sits
-   on: --bg, --surface, --surface-2. --surface-4 is excluded because it is only
-   ever a scrollbar thumb and never carries type. An earlier pass required text
-   to clear it as well, which produced failures that looked real and collapsed
-   --muted and --faint to the same colour.
-
-   --accent is the palette's dark rust darkened to #a1390c; unmodified #b7410e
-   measured 3.76:1 on --surface-2, and .result-row:hover paints that surface
-   underneath accent-coloured type. */
+   --fill-mustard and --fill-teal, and the warm halftone dot texture
+   (--grid-line), are unchanged from the previous theme and are the remaining
+   candidates for a later pass. */
 :root {
-  --bg: #FFFFFF;
+  --bg: #F9F7F1;
   --surface: #FFFFFF;
-  --surface-2: #F4F4F4;
-  --surface-3: #E0E0E0;
+  --surface-2: #F0F0F0;
+  --surface-3: #E5E5E5;
   --surface-4: #CCCCCC;
-  --ink: #000000;
+  --ink: #1C1917;
   --ink-strong: #000000;
-  --muted: #333333;
-  /* --faint carries every micro-label, so it must clear 4.5:1 on --bg AND on
-     every surface above it, not just the page. It is the binding constraint in
-     the palette's own mid-greys do not clear it. */
-  --faint: #666666;
-  --line: #000000;
-  /* Solved, not the palette's #68BA7F: see the header note. */
-  --accent: #E63946;
+  --muted: #666666;
+  /* --faint is #999999, which does not clear WCAG AA (2.50:1 on --surface-2,
+     2.85:1 on --surface). Deliberate: it is confined to the 10.5px
+     micro-labels, which the editorial register treats as furniture. Anything
+     that must be read uses --muted or darker. */
+  --faint: #999999;
+  --line: #E5E5E5;
+  /* #2563EB clears AA as text: 4.95:1 on --bg, 5.17:1 on --surface. White on
+     it is 5.17:1. --accent-alt is the same blue - hover type, secondary fills
+     and ::selection all key off it. */
+  --accent: #2563EB;
   --accent-ink: #FFFFFF;
-  --accent-alt: #000000;
+  --accent-alt: #2563EB;
   /* Retro sunset supplies two more colours, but they are FILLS and never text:
      mustard fails on a light ground at 1.33:1, and the palette's teal carries
      neither light nor dark text (4.10 and 3.55). Darkened 20% teal takes the
@@ -50,11 +45,10 @@
      cannot follow --ink-strong, which is dark here and would
      vanish against a black overlay. */
   --on-scrim: #FFFFFF;
-  /* Hard shadows, zero blur. This is the single strongest retro signal, and it
-     costs nothing in layout - a blurred shadow was purely decorative while an
-     offset one reads as a solid printed shape. */
-  --shadow: 4px 4px 0 #000000;
-  --shadow-lift: 6px 6px 0 #000000;
+  /* Soft, blurred, no offset. The border carries the frame; the shadow only
+     lifts. --shadow-lift is the hover and dialog tier. */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.1);
   /* Page texture is a ruled grid rather than film grain. A catalogue of
      records is a grid of things, and ruling reads as index; noise read as
      paper. It is static, which also retires two animated fixed full-viewport
@@ -76,12 +70,12 @@
   --track-tight: 0.03em;
   --track-mid: 0.06em;
   --track-wide: 0.12em;
-  /* Retro shape. Controls go to pills and album artwork goes square: 70s record
-     sleeves were square and the controls around them were not. Circles are left
-     alone - a circular arrow or close button is a circle in every decade. */
-  --radius-control: 0px;
-  --radius-art: 0px;
-  --radius-surface: 0px;
+  /* Soft editorial rounding. Controls 6px, artwork 4px, surfaces 6px. Circles
+     are left alone - a circular arrow or close button is a circle in every
+     decade. */
+  --radius-control: 6px;
+  --radius-art: 4px;
+  --radius-surface: 6px;
   /* Display and body are the same face on purpose. Fraunces + Spectral cost
      131.5 KB of the Latin subset between them; Figtree does both roles in
      70.6 KB including the italic. Neither grotesque wraps wider than Fraunces
@@ -252,8 +246,9 @@ img { display: block; max-width: 100%; }
 .topbar {
   display: flex; align-items: center; gap: 18px;
   padding: 10px 24px;
-  background: var(--bg);
-  border-bottom: 2px solid var(--line);
+  background: var(--surface);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   position: sticky; top: 0; z-index: 20;
 }
 
@@ -298,17 +293,18 @@ img { display: block; max-width: 100%; }
 .brand-mark {
   display: inline-block;
   padding: 6px 11px;
-  background: var(--ink-strong);
-  color: var(--bg);
+  background: var(--accent);
+  color: var(--accent-ink);
   font-family: var(--font-display);
   font-weight: var(--display-weight);
   font-size: 15px;
   line-height: 1;
   letter-spacing: -0.01em;
-  border-radius: 0;
+  border-radius: var(--radius-control);
   box-shadow: 2px 2px 0 rgba(74, 42, 20, 0.85);
   transition: transform var(--dur-fast) var(--ease-spring),
-              box-shadow var(--dur-fast) var(--ease-spring);
+              box-shadow var(--dur-fast) var(--ease-spring),
+              width var(--dur-fast) var(--ease-spring);
 }
 .brand:active .brand-mark { transform: translate(3px, 3px); box-shadow: 0 0 0 rgba(74, 42, 20, 0); }
 
@@ -327,13 +323,13 @@ img { display: block; max-width: 100%; }
   transition: color var(--dur-fast) var(--ease-soft), background-color var(--dur-fast) var(--ease-soft);
 }
 .nav-tab:hover { color: var(--accent); background: var(--surface-2); }
-.nav-tab.active { color: var(--ink-strong); }
+.nav-tab.active { color: var(--accent); }
 .nav-tab.active::after {
   content: '';
   position: absolute;
   left: 11px; right: 11px; bottom: -11px;
   height: 2px;
-  background: var(--ink-strong);
+  background: var(--accent);
 }
 .nav-icon { font-size: 13px; line-height: 1; opacity: 0.75; }
 .nav-tab.active .nav-icon { opacity: 1; }
@@ -342,7 +338,7 @@ img { display: block; max-width: 100%; }
 .topbar-search .search-icon {
   position: absolute; left: 12px; top: 50%;
   transform: translateY(-50%);
-  color: var(--faint); font-size: 13px; pointer-events: none;
+  color: var(--muted); font-size: 13px; pointer-events: none;
 }
 .topbar-search input {
   width: 100%;
@@ -383,22 +379,22 @@ img { display: block; max-width: 100%; }
 /* ================================================================== views */
 .view { display: none; }
 .active-view { display: block; }
-.page { padding: 26px 24px 72px; max-width: 1420px; }
+.page { padding: 26px 24px 72px; width: 100%; max-width: 1420px; margin: 0 auto; }
 
 .page-heading { margin-bottom: 22px; }
 .page-heading .eyebrow { margin: 0 0 5px; }
 .page-heading h1 {
   margin: 0;
-  font-size: 30px;
-  font-weight: var(--display-weight);
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 800;
   color: var(--ink-strong);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   line-height: 1.1;
 }
 .page-heading .muted { margin: 7px 0 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
 
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 36px 0 14px; }
-.section-heading h2 { margin: 0; font-size: 21px; font-weight: var(--display-weight); color: var(--ink-strong); }
+.section-heading h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 .section-heading .eyebrow { margin-bottom: 4px; }
 .result-count { font-family: var(--font-mono); font-weight: var(--mono-weight); font-size: 10.5px; letter-spacing: var(--track-mid); text-transform: uppercase; color: var(--faint); }
 
@@ -491,18 +487,24 @@ img { display: block; max-width: 100%; }
   padding: 12px;
   text-align: left;
   cursor: pointer;
-  border: 2px solid var(--line);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: background-color var(--dur-fast) var(--ease-soft),
+              border-color var(--dur-fast) var(--ease-soft);
+}
+.album-card:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
 }
 .album-card .album-art {
   width: 100%; aspect-ratio: 1; object-fit: cover;
   border-radius: var(--radius-art);
   border: 0;
   background: var(--surface-2);
-  box-shadow: var(--shadow);
   transition: transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease-soft), opacity 0.45s var(--ease-soft);
 }
-.album-card:hover .album-art { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: var(--accent); }
+.album-card:hover .album-art { border-color: var(--accent); }
 .album-meta { padding-top: 10px; min-width: 0; }
 .album-meta strong {
   display: block;
@@ -522,12 +524,13 @@ img { display: block; max-width: 100%; }
    the artwork to the card, so the artwork inside carries no border or shadow
    of its own - otherwise the two frames would stack. */
 .discover-bento .album-card {
-  border: 2px solid var(--line);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--surface);
   box-shadow: var(--shadow);
   transition: transform var(--dur-spring) var(--ease-spring),
               border-color var(--dur-fast) var(--ease-soft),
-              box-shadow var(--dur) var(--ease);
+              box-shadow var(--dur) var(--ease),
+              background-color var(--dur-fast) var(--ease-soft);
 }
 .discover-bento .album-card:hover {
   transform: translateY(-4px);

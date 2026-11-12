@@ -8,6 +8,7 @@ is kept only as a fallback for releases Deezer does not carry.
 import gzip
 import json
 import os
+import random
 import re
 import threading
 import time
@@ -490,6 +491,182 @@ def dz_album_payload(album_id):
     }
 
 
+# --------------------------------------------------------------- era pool
+# Discover is curated from a fixed pool of 70s/80s progressive rock, classic
+# rock and progressive pop artists rather than Deezer's charts or a text
+# search. Verified live against the API: a text search for "progressive rock"
+# and friends returns tribute acts and compilation series - their titles
+# contain the query words - and never the canonical artists, while the
+# compilation pseudo-artists carry enough fans and rank to pass any
+# popularity gate ("Classic Rock" alone has 22,559 fans). Pulling each
+# artist's own discography and top tracks makes the exclusion structural.
+#
+# IDs were resolved by exact name match plus fan count - search position is
+# not trustworthy, tribute acts and karaoke entries outrank the real band
+# for several of these names. Every artist below carries >= 32k fans.
+ERA_ARTISTS = [
+    (860, 'Pink Floyd'), (1994, 'King Crimson'), (2711, 'Yes'),
+    (3037, 'Genesis'), (8686, 'Rush'), (848, 'Led Zeppelin'),
+    (847, 'The Doors'), (2888, 'Jethro Tull'), (12826, 'Camel'),
+    (207, 'Electric Light Orchestra'), (3128, 'Supertramp'),
+    (1385, 'Kansas'), (5660, 'Styx'), (3702, 'The Alan Parsons Project'),
+    (1048, 'Peter Gabriel'), (2893, 'Marillion'), (1679, 'Gentle Giant'),
+    (990, 'Mike Oldfield'),
+]
+ERA_YEAR_MIN, ERA_YEAR_MAX = 1967, 1989
+ALBUM_FAN_MIN = 5000
+TRACK_RANK_MIN = 50000
+MAX_ALBUMS_PER_ARTIST = 3
+MAX_TRACKS_PER_ARTIST = 8
+
+# Persisted so a restart serves the curated shelves instantly instead of
+# waiting for the ~37 rate-limited upstream calls again; warm_curated_discover
+# refreshes it in the background and rewrites this file when it finishes.
+DISCOVER_CACHE_FILE = 'discover_cache.json'
+
+# Discover rows are computed once at boot by warm_curated_discover() and
+# served from here. The curation needs ~37 rate-limited upstream calls
+# (>10s), which aborts the browser connection if it runs inside a request.
+# None until the boot thread finishes, in which case the route answers empty
+# rows and the client renders its hardcoded artist fallback.
+CURATED_DISCOVER_CACHE = None
+
+
+def curated_discover():
+    """Album and track candidates from the era pool, gated and shuffled.
+
+    Albums and tracks are fetched concurrently per artist (dz() serialises
+    the upstream calls itself), then gated: albums must be era releases of
+    type album with >= ALBUM_FAN_MIN fans, tracks must clear TRACK_RANK_MIN,
+    and each artist is capped so one name cannot dominate a shelf. The
+    survivors are shuffled so the shelves are not in the same order on every
+    load.
+    """
+    albums_by_artist = {}
+    tops_by_artist = {}
+
+    def collect(artist_id):
+        try:
+            albums_by_artist[artist_id] = (
+                dz('artist/' + str(artist_id) + '/albums', limit='100').get('data') or [])
+        except Exception:
+            albums_by_artist[artist_id] = []
+        try:
+            tops_by_artist[artist_id] = (
+                dz('artist/' + str(artist_id) + '/top', limit='10').get('data') or [])
+        except Exception:
+            tops_by_artist[artist_id] = []
+
+    threads = []
+    for artist_id, name in ERA_ARTISTS:
+        t = threading.Thread(target=collect, args=(artist_id,))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+
+    albums = []
+    for artist_id, name in ERA_ARTISTS:
+        picked = 0
+        candidates = sorted(
+            albums_by_artist.get(artist_id, []),
+            key=lambda a: -(a.get('fans') or 0))
+        for a in candidates:
+            if picked >= MAX_ALBUMS_PER_ARTIST:
+                break
+            record_type = (a.get('record_type') or '').lower()
+            try:
+                year = int((a.get('release_date') or '')[:4])
+            except ValueError:
+                continue
+            if record_type != 'album' or not (ERA_YEAR_MIN <= year <= ERA_YEAR_MAX):
+                continue
+            if (a.get('fans') or 0) < ALBUM_FAN_MIN:
+                continue
+            item = dict(a)
+            item['artist'] = {'id': artist_id, 'name': name}
+            albums.append(item)
+            picked += 1
+
+    tracks = []
+    for artist_id, name in ERA_ARTISTS:
+        picked = 0
+        for t in tops_by_artist.get(artist_id, []):
+            if picked >= MAX_TRACKS_PER_ARTIST:
+                break
+            if (t.get('rank') or 0) < TRACK_RANK_MIN:
+                continue
+            tracks.append(t)
+            picked += 1
+
+    random.shuffle(albums)
+    random.shuffle(tracks)
+    return albums[:20], tracks[:50]
+
+
+def curated_discover_rows():
+    """The complete /api/discover payload: two curated shelves plus the
+    artist chart row. Runs in the boot thread, never inside a request."""
+    rows = []
+
+    def add_album_row(title, items):
+        rows.append({'title': title, 'kind': 'album', 'items': [
+            {
+                'id': str(a.get('id', '')),
+                'title': a.get('title', ''),
+                'artist': (a.get('artist') or {}).get('name', ''),
+                'year': (a.get('release_date') or '')[:4],
+                'record_type': a.get('record_type', ''),
+                'explicit': bool(a.get('explicit_lyrics')),
+                'image': cover_url(a.get('cover_medium'), '250x250'),
+            }
+            for a in items if a.get('id')
+        ]})
+
+    def add_track_row(title, items):
+        rows.append({'title': title, 'kind': 'track', 'items': [
+            {
+                'id': str(t.get('id', '')),
+                'title': t.get('title', ''),
+                'artist': (t.get('artist') or {}).get('name', ''),
+                'album_id': str((t.get('album') or {}).get('id', '')),
+                'explicit': bool(t.get('explicit_lyrics')),
+                'duration': t.get('duration', 0),
+                'image': cover_url((t.get('album') or {}).get('cover_medium'), '250x250'),
+            }
+            for t in items if t.get('id')
+        ]})
+
+    def add_artist_row(title, items):
+        # Deezer's artist chart carries no fan or album count, only a
+        # position. The previous nb_album was always 0 upstream and read by
+        # nobody; the client showed nb_fan, which was not sent at all, so
+        # every card rendered a hard "0 fans".
+        rows.append({'title': title, 'kind': 'artist', 'items': [
+            {
+                'id': str(a.get('id', '')),
+                'name': a.get('name', ''),
+                'position': a.get('position') or index + 1,
+                'image': picture_url(a.get('picture_medium'), '250x250'),
+            }
+            for index, a in enumerate(items) if a.get('id')
+        ]})
+
+    era_albums, era_tracks = curated_discover()
+    add_album_row('Albums you might enjoy', era_albums)
+    add_track_row('Tracks on the rise', era_tracks)
+
+    # The artist shelf keeps the chart: the pool carries no images without
+    # one /artist/{id} call per name, and the curation brief covers the
+    # album and track rows.
+    try:
+        add_artist_row('Artists to know', (dz('chart/0/artists', limit='50').get('data') or []))
+    except Exception:
+        pass  # a missing artist row degrades, it does not break the page
+
+    return [r for r in rows if r['items']]
+
+
 class Handler(SimpleHTTPRequestHandler):
     # The prototype is edited locally, so stale cached assets are more confusing
     # than useful and a reload should always pick up local changes.
@@ -508,6 +685,12 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json({'ok': True, 'service': 'kalm'})
             return
 
+        if path == '/discover_cache.json':
+            # The cache is a runtime artifact, not a public asset; block it so
+            # the static file server cannot serve it directly.
+            self.send_json({'error': 'not found'}, 404)
+            return
+
         if path == '/api/search':
             query = params.get('q', [''])[0].strip()
             if not query:
@@ -520,89 +703,13 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         if path == '/api/discover':
-            try:
-                # Chart rows give Discover real editorial content instead of
-                # empty carousels. Each row is an independent call, so failures
-                # degrade to a missing row rather than a broken page.
-                def safe_row(path, limit='50'):
-                    try:
-                        return (dz(path, limit=limit).get('data') or [])
-                    except Exception:
-                        return []
-
-                rows = []
-
-                def add_album_row(title, items):
-                    rows.append({'title': title, 'kind': 'album', 'items': [
-                        {
-                            'id': str(a.get('id', '')),
-                            'title': a.get('title', ''),
-                            'artist': (a.get('artist') or {}).get('name', ''),
-                            'year': (a.get('release_date') or '')[:4],
-                            'record_type': a.get('record_type', ''),
-                            'explicit': bool(a.get('explicit_lyrics')),
-                            'image': cover_url(a.get('cover_medium'), '250x250'),
-                        }
-                        for a in items if a.get('id')
-                    ]})
-
-                def add_artist_row(title, items):
-                    # Deezer's artist chart carries no fan or album count, only a
-                    # position. The previous nb_album was always 0 upstream and
-                    # read by nobody; the client showed nb_fan, which was not
-                    # sent at all, so every card rendered a hard "0 fans".
-                    rows.append({'title': title, 'kind': 'artist', 'items': [
-                        {
-                            'id': str(a.get('id', '')),
-                            'name': a.get('name', ''),
-                            'position': a.get('position') or index + 1,
-                            'image': picture_url(a.get('picture_medium'), '250x250'),
-                        }
-                        for index, a in enumerate(items) if a.get('id')
-                    ]})
-
-                def add_track_row(title, items):
-                    rows.append({'title': title, 'kind': 'track', 'items': [
-                        {
-                            'id': str(t.get('id', '')),
-                            'title': t.get('title', ''),
-                            'artist': (t.get('artist') or {}).get('name', ''),
-                            'album_id': str((t.get('album') or {}).get('id', '')),
-                            'explicit': bool(t.get('explicit_lyrics')),
-                            'duration': t.get('duration', 0),
-                            'image': cover_url((t.get('album') or {}).get('cover_medium'), '250x250'),
-                        }
-                        for t in items if t.get('id')
-                    ]})
-
-                add_track_row('Tracks on the rise', safe_row('chart/0/tracks'))
-                add_artist_row('Artists to know', safe_row('chart/0/artists'))
-
-                # Deezer's album charts only expose six releases, which is too
-                # few for a carousel, so the album row is derived from the albums
-                # behind the current chart tracks instead.
-                chart_tracks = safe_row('chart/0/tracks', limit='50')
-                albums_seen = {}
-                for t in chart_tracks:
-                    album = t.get('album') or {}
-                    aid = str(album.get('id', ''))
-                    if not aid or aid in albums_seen:
-                        continue
-                    albums_seen[aid] = {
-                        'id': aid,
-                        'title': album.get('title', ''),
-                        'artist': (t.get('artist') or {}).get('name', ''),
-                        'year': '',
-                        'record_type': '',
-                        'explicit': bool(album.get('explicit_lyrics')),
-                        'image': cover_url(album.get('cover_medium'), '250x250'),
-                    }
-                rows.insert(0, {'title': 'Albums you might enjoy', 'kind': 'album',
-                                'items': list(albums_seen.values())[:20]})
-
-                self.send_json({'rows': [r for r in rows if r['items']]})
-            except Exception as exc:
-                self.send_json({'error': str(exc), 'rows': []}, 502)
+            # Served from the boot-time cache (CURATED_DISCOVER_CACHE, filled
+            # by warm_curated_discover before serve_forever). Computing it
+            # inside a request needs ~37 rate-limited upstream calls and the
+            # browser aborts the connection long before the JSON can be sent.
+            # Until the boot thread finishes, empty rows let the client's
+            # hardcoded artist fallback render instead.
+            self.send_json({'rows': CURATED_DISCOVER_CACHE or []})
             return
 
         if path == '/api/artist':
@@ -723,10 +830,38 @@ class Handler(SimpleHTTPRequestHandler):
                              'application/json; charset=utf-8', status)
 
 
+def warm_curated_discover():
+    """Refresh CURATED_DISCOVER_CACHE in the background and persist it to
+    DISCOVER_CACHE_FILE so the next restart is instant. Runs in a daemon
+    thread so the server accepts requests immediately; until it finishes,
+    /api/discover serves the disk cache (if any) or empty rows."""
+    global CURATED_DISCOVER_CACHE
+    try:
+        CURATED_DISCOVER_CACHE = curated_discover_rows()
+    except Exception:
+        return  # keep serving whatever is already cached (disk or memory)
+    try:
+        with open(DISCOVER_CACHE_FILE, 'w', encoding='utf-8') as handle:
+            json.dump(CURATED_DISCOVER_CACHE, handle)
+    except Exception:
+        pass  # a failed disk write must not disturb the in-memory cache
+
+
 if __name__ == '__main__':
+    # Load the persisted cache first so /api/discover is instant on restart;
+    # warm_curated_discover refreshes it in the background afterwards.
+    try:
+        with open(DISCOVER_CACHE_FILE, 'r', encoding='utf-8') as handle:
+            CURATED_DISCOVER_CACHE = json.load(handle)
+        print(f'Loaded discover cache from {DISCOVER_CACHE_FILE}')
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass  # corrupt cache must not block startup; warm thread rewrites it
     print(f'Kalm running at http://{HOST}:{PORT}')
     print('Data source: Deezer (no API key required)')
     print('Video source: YouTube Data API' if YOUTUBE_API_KEY
           else 'Video source: public Piped instances (set YOUTUBE_API_KEY for the official API)')
     print(f'Rate limit: {MIN_INTERVAL}s between upstream requests; cache TTL {CACHE_TTL}s')
+    threading.Thread(target=warm_curated_discover, daemon=True).start()
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
