@@ -1,39 +1,40 @@
 /* ============================================================== Kalm tokens
-   One theme: "clean editorial". Off-white ground, white surfaces, soft grey
-   borders, one blue accent, blurred offset-free shadows, gentle radii.
+   One theme: "sage & tomato". Off-white ground, white surfaces, soft warm
+   borders, a tomato accent for fills and a darkened sage for text, blurred
+   offset-free shadows, gentle radii.
 
-   Text pairs: --ink, --ink-strong and --muted clear WCAG AA on every surface
-   text sits on (--bg, --surface, --surface-2; tightest is --muted on
-   --surface-2 at 5.04:1). --faint (#999999) does not clear AA (2.50:1 on
-   --surface-2, 2.85:1 on --surface) and is confined by convention to the
-   10.5px micro-labels; anything that must be read uses --muted or darker.
-   --accent #2563EB is 4.95:1 on --bg and 5.17:1 on --surface, and white on
-   it is 5.17:1.
+   Text pairs: --ink (15.8:1 on --bg), --ink-strong, --muted (6.85:1 on --bg,
+   6.33:1 on --surface-2) and --accent-alt (4.78:1 on --bg, 5.21:1 on
+   --surface, 4.42:1 on --surface-2) clear WCAG AA on the surfaces text sits
+   on. --faint (#777777) does not clear it (4.11:1 on --bg, 4.48:1 on
+   --surface) and is confined by convention to the 10.5px micro-labels.
+   Tomato (--accent) is a fill/UI colour - 3.69:1 on --bg, white on it
+   4.02:1 - so text that must clear AA uses --accent-alt.
 
    --fill-mustard and --fill-teal, and the warm halftone dot texture
    (--grid-line), are unchanged from the previous theme and are the remaining
    candidates for a later pass. */
 :root {
-  --bg: #F9F7F1;
+  --bg: #F7F5EF;
   --surface: #FFFFFF;
-  --surface-2: #F0F0F0;
-  --surface-3: #E5E5E5;
-  --surface-4: #CCCCCC;
-  --ink: #1C1917;
+  --surface-2: #EFECE6;
+  --surface-3: #E2DED3;
+  --surface-4: #D1CDBF;
+  --ink: #1C1B1A;
   --ink-strong: #000000;
-  --muted: #666666;
-  /* --faint is #999999, which does not clear WCAG AA (2.50:1 on --surface-2,
-     2.85:1 on --surface). Deliberate: it is confined to the 10.5px
-     micro-labels, which the editorial register treats as furniture. Anything
-     that must be read uses --muted or darker. */
-  --faint: #999999;
-  --line: #E5E5E5;
-  /* #2563EB clears AA as text: 4.95:1 on --bg, 5.17:1 on --surface. White on
-     it is 5.17:1. --accent-alt is the same blue - hover type, secondary fills
-     and ::selection all key off it. */
-  --accent: #2563EB;
+  --muted: #555555;
+  /* --faint is #777777: 4.11:1 on --bg, 4.48:1 on --surface - still short of
+     the 4.5:1 AA floor, so it stays confined to the 10.5px micro-labels;
+     anything that must be read uses --muted or darker. */
+  --faint: #777777;
+  --line: #E5E1D8;
+  /* Tomato is a fill/UI colour, not a text colour: #E8412C is 3.69:1 on --bg
+     and 4.02:1 on --surface, and white on it is 4.02:1. Text that must clear
+     AA uses --accent-alt (#5E734B: 4.78:1 on --bg, 5.21:1 on --surface,
+     4.42:1 on --surface-2). */
+  --accent: #E8412C;
   --accent-ink: #FFFFFF;
-  --accent-alt: #2563EB;
+  --accent-alt: #5E734B;
   /* Retro sunset supplies two more colours, but they are FILLS and never text:
      mustard fails on a light ground at 1.33:1, and the palette's teal carries
      neither light nor dark text (4.10 and 3.55). Darkened 20% teal takes the
@@ -47,8 +48,8 @@
   --on-scrim: #FFFFFF;
   /* Soft, blurred, no offset. The border carries the frame; the shadow only
      lifts. --shadow-lift is the hover and dialog tier. */
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow: 0 4px 12px rgba(28, 27, 26, 0.05);
+  --shadow-lift: 0 8px 24px rgba(28, 27, 26, 0.08);
   /* Page texture is a ruled grid rather than film grain. A catalogue of
      records is a grid of things, and ruling reads as index; noise read as
      paper. It is static, which also retires two animated fixed full-viewport
